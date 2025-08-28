@@ -42,3 +42,14 @@ CREATE INDEX IF NOT EXISTS idx_repositories_arxiv_url ON repositories(arxiv_url)
 
 -- Create index on paper_scraped_at for tracking when papers were last scraped
 CREATE INDEX IF NOT EXISTS idx_repositories_paper_scraped_at ON repositories(paper_scraped_at DESC);
+
+-- Drop the existing policy
+DROP POLICY IF EXISTS "allow_anon_update_repositories" ON public.repositories;
+
+-- Create a new, more permissive policy
+CREATE POLICY "allow_anon_update_repositories" 
+ON public.repositories 
+FOR UPDATE 
+TO anon 
+USING (true) 
+WITH CHECK (true);

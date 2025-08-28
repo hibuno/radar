@@ -16,14 +16,14 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"dotenv": "^17.2.1",
+		"image-size": "^2.0.2",
 		"jsdom": "^26.1.0",
 		"lucide-react": "^0.542.0",
 		"next": "15.5.2",
-		"node-cron": "^4.2.1",
-		"playwright": "^1.55.0",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
-		"steel-sdk": "^0.10.1",
+		"remark": "^15.0.1",
+		"remark-parse": "^11.0.0",
 		"tailwind-merge": "^3.3.1"
 	},
 	"devDependencies": {

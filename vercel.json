@@ -4,5 +4,11 @@
 		"app/api/**/*": {
 			"maxDuration": 300
 		}
-	}
+	},
+	"crons": [
+		{
+			"path": "/api/images",
+			"schedule": "*/3 * * * *"
+		}
+	]
 }
