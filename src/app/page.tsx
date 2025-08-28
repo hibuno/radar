@@ -1,8 +1,76 @@
 import { supabase, Repository } from "@/lib/supabase";
 import { HomeClient } from "@/app/page-client";
 import { Radar } from "@/components/radar";
+import type { Metadata } from "next";
 
 const ITEMS_PER_PAGE = 12;
+
+export const metadata: Metadata = {
+ title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+ description:
+  "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers. Stay updated with the latest open source innovations, AI projects, and developer tools from across the web.",
+ keywords: [
+  "trending repositories",
+  "github trending",
+  "open source projects",
+  "rising stars",
+  "developer tools",
+  "programming",
+  "software development",
+  "research papers",
+  "arxiv",
+  "machine learning",
+  "AI projects",
+  "popular repositories",
+  "coding projects",
+ ],
+ authors: [{ name: "The Spy Project" }],
+ creator: "The Spy Project",
+ publisher: "The Spy Project",
+ metadataBase: new URL(
+  process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com"
+ ),
+ alternates: {
+  canonical: "/",
+ },
+ openGraph: {
+  title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+  description:
+   "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers. Stay updated with the latest open source innovations.",
+  url: "/",
+  siteName: "The Spy Project",
+  locale: "en_US",
+  type: "website",
+  images: [
+   {
+    url: "/og-image.png",
+    width: 1200,
+    height: 630,
+    alt: "The Spy Project - Discover Trending Repositories & Rising Stars",
+   },
+  ],
+ },
+ twitter: {
+  card: "summary_large_image",
+  title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+  description:
+   "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
+  images: ["/og-image.png"],
+  creator: "@thespyproject",
+  site: "@thespyproject",
+ },
+ robots: {
+  index: true,
+  follow: true,
+  googleBot: {
+   index: true,
+   follow: true,
+   "max-video-preview": -1,
+   "max-image-preview": "large",
+   "max-snippet": -1,
+  },
+ },
+};
 
 async function getInitialData(): Promise<{
  repositories: Repository[];
@@ -85,18 +153,77 @@ export default async function Home() {
  const { repositories, popularRepos, recommendedRepos, totalCount } =
   await getInitialData();
 
- return (
-  <div className="max-w-6xl mx-auto border-x">
-   {/* Radar Section */}
-   <Radar />
+ const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: "The Spy Project - Trending Repositories",
+  description:
+   "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+  mainEntity: {
+   "@type": "ItemList",
+   name: "Trending Repositories",
+   description: "A curated list of trending and popular repositories",
+   numberOfItems: totalCount,
+   itemListElement: repositories.slice(0, 10).map((repo, index) => ({
+    "@type": "SoftwareSourceCode",
+    position: index + 1,
+    name: repo.title,
+    description: repo.summary,
+    url: repo.repository,
+    programmingLanguage: repo.languages?.split(",")[0]?.trim(),
+    author: {
+     "@type": "Organization",
+     name: repo.repository?.match(/github\.com\/([^\/]+)/)?.[1] || "Unknown",
+    },
+    aggregateRating:
+     repo.stars > 0
+      ? {
+         "@type": "AggregateRating",
+         ratingValue: Math.min(5, Math.log10(repo.stars + 1) * 1.5),
+         ratingCount: repo.stars,
+         bestRating: 5,
+         worstRating: 1,
+        }
+      : undefined,
+   })),
+  },
+  breadcrumb: {
+   "@type": "BreadcrumbList",
+   itemListElement: [
+    {
+     "@type": "ListItem",
+     position: 1,
+     name: "Home",
+     item: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+    },
+   ],
+  },
+  publisher: {
+   "@type": "Organization",
+   name: "The Spy Project",
+   url: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+  },
+ };
 
-   {/* Main Content */}
-   <HomeClient
-    initialRepositories={repositories}
-    popularRepos={popularRepos}
-    recommendedRepos={recommendedRepos}
-    initialTotalCount={totalCount}
+ return (
+  <>
+   <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
    />
-  </div>
+   <div className="max-w-6xl mx-auto border-x">
+    {/* Radar Section */}
+    <Radar />
+
+    {/* Main Content */}
+    <HomeClient
+     initialRepositories={repositories}
+     popularRepos={popularRepos}
+     recommendedRepos={recommendedRepos}
+     initialTotalCount={totalCount}
+    />
+   </div>
+  </>
  );
 }
