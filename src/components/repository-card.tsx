@@ -91,7 +91,7 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
  return (
   <Link
    href={`/${repository.repository}`}
-   className="block w-[calc(100%/3-1px)] bg-background"
+   className="block w-[calc(100%/2-1px)] md:w-[calc(100%/3-1px)] bg-background"
   >
    <div className="repo-card">
     {/* Preview Image */}

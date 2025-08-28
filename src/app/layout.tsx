@@ -4,6 +4,7 @@ import { Urbanist, Fira_Mono } from "next/font/google";
 import { Databuddy } from "@databuddy/sdk/react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 const urbanist = Urbanist({
  subsets: ["latin"],
@@ -34,6 +35,8 @@ export default function RootLayout({
      {/* Header Section */}
      <Header />
      {children}
+     {/* Footer Section */}
+     <Footer />
     </ThemeProvider>
     {process.env.NODE_ENV === "production" && (
      <Databuddy
