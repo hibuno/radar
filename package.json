@@ -1,34 +1,41 @@
 {
-  "name": "curgit",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@radix-ui/react-slot": "^1.2.3",
-    "@supabase/supabase-js": "^2.56.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.542.0",
-    "next": "15.5.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "tailwind-merge": "^3.3.1"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.2",
-    "tailwindcss": "^4",
-    "tw-animate-css": "^1.3.7",
-    "typescript": "^5"
-  }
+	"name": "curgit",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev --turbopack",
+		"build": "next build --turbopack",
+		"start": "next start",
+		"lint": "eslint"
+	},
+	"dependencies": {
+		"@radix-ui/react-slot": "^1.2.3",
+		"@radix-ui/react-toast": "^1.2.15",
+		"@supabase/supabase-js": "^2.56.0",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"dotenv": "^17.2.1",
+		"jsdom": "^26.1.0",
+		"lucide-react": "^0.542.0",
+		"next": "15.5.2",
+		"node-cron": "^4.2.1",
+		"playwright": "^1.55.0",
+		"react": "19.1.0",
+		"react-dom": "19.1.0",
+		"steel-sdk": "^0.10.1",
+		"tailwind-merge": "^3.3.1"
+	},
+	"devDependencies": {
+		"@eslint/eslintrc": "^3",
+		"@tailwindcss/postcss": "^4",
+		"@types/jsdom": "^21.1.7",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"eslint": "^9",
+		"eslint-config-next": "15.5.2",
+		"tailwindcss": "^4",
+		"tw-animate-css": "^1.3.7",
+		"typescript": "^5"
+	}
 }

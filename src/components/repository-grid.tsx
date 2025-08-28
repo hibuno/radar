@@ -10,7 +10,6 @@ interface RepositoryGridProps {
 
 export function RepositoryGrid({
  repositories,
- variant = "compact",
 }: RepositoryGridProps) {
  if (repositories.length === 0) {
   return (

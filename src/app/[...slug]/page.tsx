@@ -8,18 +8,15 @@ import {
  Star,
  GitFork,
  Eye,
- ExternalLink,
  Github,
  Calendar,
  AlertCircle,
  Code,
- Users,
  Zap,
  Activity,
  Award,
  Globe,
  BookOpen,
- Download,
  Shield,
  Clock,
  GitBranch,
@@ -125,7 +122,8 @@ const getExperienceColor = (experience: string) => {
 };
 
 export default async function RepositoryDetail({ params }: PageProps) {
- const slug = await params.slug.join("/");
+ const resolvedParams = await params;
+ const slug = resolvedParams.slug.join("/");
  const { repository, relatedRepos } = await getRepository(slug);
 
  if (!repository) {

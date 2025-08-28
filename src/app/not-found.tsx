@@ -15,7 +15,7 @@ export default function NotFound() {
         </h1>
         
         <p className="text-gray-600 mb-6">
-          The repository you're looking for doesn't exist or hasn't been added to our database yet.
+          The repository you&apos;re looking for doesn&apos;t exist or hasn&apos;t been added to our database yet.
         </p>
         
         <div className="space-y-3">
@@ -23,7 +23,7 @@ export default function NotFound() {
             This could happen if:
           </p>
           <ul className="text-sm text-gray-500 space-y-1">
-            <li>• The repository hasn't been indexed yet</li>
+            <li>• The repository hasn&apos;t been indexed yet</li>
             <li>• The URL was typed incorrectly</li>
             <li>• The repository was removed from our database</li>
           </ul>

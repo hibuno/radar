@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase, Repository } from "@/lib/supabase";
 import { RepositoryGrid } from "@/components/repository-grid";
 import { InfiniteScroll } from "@/components/infinite-scroll";

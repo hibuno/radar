@@ -14,9 +14,8 @@ interface RepositoryCardProps {
 
 export function RepositoryCard({
  repository,
- variant = "compact",
 }: RepositoryCardProps) {
- const [currentImageIndex, setCurrentImageIndex] = useState(0);
+ const [currentImageIndex] = useState(0);
  const [imageError, setImageError] = useState(false);
 
  const languages =
@@ -26,19 +25,21 @@ export function RepositoryCard({
    .filter(Boolean) || [];
 
  // Parse images from repository.images field
- const getImages = () => {
+ const getImages = (): string[] => {
   if (!repository.images) return [];
 
   try {
    if (typeof repository.images === "string") {
     return JSON.parse(repository.images);
    }
-   return repository.images;
+   return Array.isArray(repository.images) ? repository.images : [];
   } catch {
-   if (typeof repository.images === "string") {
-    return repository.images
+   // Type assertion to handle the TypeScript narrowing issue
+   const imageStr = repository.images as unknown as string;
+   if (typeof imageStr === "string") {
+    return imageStr
      .split(",")
-     .map((url) => url.trim())
+     .map((url: string) => url.trim())
      .filter(Boolean);
    }
    return [];
