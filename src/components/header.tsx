@@ -1,5 +1,14 @@
 import { HatGlasses } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+ Dialog,
+ DialogContent,
+ DialogDescription,
+ DialogHeader,
+ DialogTitle,
+ DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function Header() {
  return (
@@ -17,6 +26,37 @@ export function Header() {
      </div>
     </Link>
    </div>
+
+   <Dialog>
+    <DialogTrigger asChild>
+     <Button variant="outline" size="sm">
+      Contact Us
+     </Button>
+    </DialogTrigger>
+    <DialogContent className="sm:max-w-md">
+     <DialogHeader>
+      <DialogTitle>Contact Us</DialogTitle>
+      <DialogDescription asChild>
+       <div className="space-y-2">
+        <p>
+         Have questions, want to report discrepancies or dislikes, or are you a
+         promotion/sponsor looking to get in touch? We&apos;d love to hear from
+         you!
+        </p>
+        <p className="text-sm text-muted-foreground">
+         Reach out to us directly at:
+        </p>
+        <a
+         href="mailto:muhibbudins1997@gmail.com"
+         className="text-primary hover:underline font-medium"
+        >
+         muhibbudins1997@gmail.com
+        </a>
+       </div>
+      </DialogDescription>
+     </DialogHeader>
+    </DialogContent>
+   </Dialog>
   </div>
  );
 }

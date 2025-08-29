@@ -97,9 +97,14 @@ export function SearchFilters({
   filters.language || filters.experience || filters.search;
 
  return (
-  <div className={cn("w-full flex flex-wrap justify-between", className)}>
+  <div
+   className={cn(
+    "w-full flex flex-wrap items-center justify-between",
+    className
+   )}
+  >
    {/* Search Input */}
-   <div className="relative w-full mb-4 md:w-fit">
+   <div className="relative w-full mb-4 md:mb-0 md:w-fit">
     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
     <Input
      placeholder="Search repositories ..."
