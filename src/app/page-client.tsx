@@ -72,10 +72,7 @@ export function HomeClient({
     const from = (pageNum - 1) * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase
-     .from("repositories")
-     .select("*")
-     .not("updated_at", "is", null);
+    let query = supabase.from("repositories").select("*").eq("publish", true);
 
     // Apply search filter
     if (searchFilters.search) {
@@ -189,7 +186,7 @@ export function HomeClient({
        />
       </div>
       <p className="text-sm text-muted-foreground hidden md:block relative z-10">
-       Repositories with the highest star count
+       More than 500 ⭐️ this month
       </p>
      </div>
      <RepositoryColumns repositories={recommendedRepos} />

@@ -5,7 +5,7 @@ interface ScrapedPaperDetail {
 	title: string;
 	abstract: string;
 	aiSummary?: string;
-	publishedDate: string;
+	publishDate: string;
 	submittedDate: string;
 	paperOfTheDay?: string;
 	authors: Array<{
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 		const paperDetail: ScrapedPaperDetail = {
 			title: '',
 			abstract: '',
-			publishedDate: '',
+			publishDate: '',
 			submittedDate: '',
 			authors: [],
 			arxivId: '',
@@ -88,15 +88,15 @@ export async function GET(request: Request) {
 			paperDetail.arxivId = arxivMatch ? arxivMatch[1] : '';
 		}
 
-		// Extract published and submitted dates
+		// Extract publish and submitted dates
 		const dateElements = document.querySelectorAll('.mb-6, .text-gray-500');
 		dateElements.forEach(element => {
 			const text = element.textContent?.trim().replace(/\s+/g, ' ') || '';
 
-			// Extract published date
-			const publishedMatch = text.match(/Published on\s+([A-Za-z]+\s+\d+)/);
-			if (publishedMatch) {
-				paperDetail.publishedDate = publishedMatch[1];
+			// Extract publish date
+			const publishMatch = text.match(/publish on\s+([A-Za-z]+\s+\d+)/);
+			if (publishMatch) {
+				paperDetail.publishDate = publishMatch[1];
 			}
 
 			// Extract submitted date

@@ -56,7 +56,7 @@ const EXPERIENCE_LEVELS = [
 const SORT_OPTIONS = [
  { value: "stars", label: "Stars", order: "desc" as const },
  { value: "forks", label: "Forks", order: "desc" as const },
- { value: "created_at", label: "Recently Added", order: "desc" as const },
+ { value: "created_at", label: "Recently", order: "desc" as const },
 ];
 
 export function SearchFilters({
@@ -168,7 +168,7 @@ export function SearchFilters({
       <Button variant="outline" size="sm" className="h-8">
        Sort by{" "}
        {SORT_OPTIONS.find((opt) => opt.value === filters.sortBy)?.label ||
-        "Recently Added"}
+        "Recently"}
        <ChevronDown className="ml-2 h-3 w-3" />
       </Button>
      </DropdownMenuTrigger>

@@ -81,7 +81,7 @@ async function getInitialData(): Promise<{
   const { count: totalCount, error: countError } = await supabase
    .from("repositories")
    .select("*", { count: "exact", head: true })
-   .not("updated_at", "is", null);
+   .eq("publish", true);
 
   if (countError) throw countError;
 
@@ -89,10 +89,22 @@ async function getInitialData(): Promise<{
   const { data: recommendedData, error: recommendedError } = await supabase
    .from("repositories")
    .select("*")
-   .not("updated_at", "is", null)
-   .gte("stars", 1000) // At least 1k stars
-   .lte("stars", 10000) // Less than 10K stars
-   .order("created_at", { ascending: false }) // Order by forks for diversity
+   .eq("publish", true)
+   .gte("stars", 500) // At least 1k stars
+   .lte("stars", 6000) // Less than 5K stars
+   .gte(
+    "created_at",
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+   ) // Start of the current month
+   .lt(
+    "created_at",
+    new Date(
+     new Date().getFullYear(),
+     new Date().getMonth() + 1,
+     1
+    ).toISOString()
+   ) // Start of the next month
+   .order("stars", { ascending: false }) // Order by forks for diversity
    .limit(6);
 
   if (recommendedError) throw recommendedError;
@@ -102,7 +114,7 @@ async function getInitialData(): Promise<{
   const { data: initialData, error: initialError } = await supabase
    .from("repositories")
    .select("*")
-   .not("updated_at", "is", null)
+   .eq("publish", true)
    .order("created_at", { ascending: false })
    .limit(ITEMS_PER_PAGE);
 

@@ -61,7 +61,7 @@ export default function LazyImage({
     ref={imgRef}
     src={currentSrc}
     alt={alt}
-    className={`transition-opacity duration-300 ${
+    className={`transition-opacity duration-300 w-auto h-64 ${
      isLoading ? "opacity-0" : "opacity-100"
     }`}
     onLoad={handleLoad}

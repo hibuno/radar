@@ -92,24 +92,28 @@ class RepositoryFetcher {
 		}
 	}
 
-	async getAllUnprocessedRepositories(): Promise<Repository[]> {
+	async getAllRepositoriesWithEmptyImages(): Promise<Repository[]> {
 		try {
 			const query = `
-	       SELECT * FROM repositories
-	       WHERE created_at IS NULL
-	     `;
+				SELECT * FROM repositories
+				WHERE 
+					images IS NULL 
+					OR images = '[]'::jsonb 
+					OR jsonb_array_length(images) = 0
+					OR created_at IS NULL
+			`;
 
 			const result = await this.dbClient.query(query);
 
 			if (result.rows.length === 0) {
-				console.log('✅ All repositories have been processed');
+				console.log('✅ All repositories have images or have been processed');
 				return [];
 			}
 
-			console.log(`📋 Found ${result.rows.length} unprocessed repositories`);
+			console.log(`📋 Found ${result.rows.length} repositories with empty/null images or unprocessed`);
 			return result.rows as Repository[];
 		} catch (error) {
-			console.error('❌ Error fetching unprocessed repositories:', error);
+			console.error('❌ Error fetching repositories with empty images:', error);
 			throw error;
 		}
 	}
@@ -184,50 +188,149 @@ class RepositoryFetcher {
 		}
 	}
 
+	extractHomepageFromReadme(readmeContent: string): string | null {
+		try {
+			// Keywords to search for homepage links
+			const homepageKeywords = [
+				'website', 'demo', 'live demo', 'preview', 'live preview',
+				'deployed', 'production', 'app', 'application', 'site',
+				'view live', 'see live', 'check it out', 'visit', 'homepage'
+			];
+
+			// Split content into lines for analysis
+			const lines = readmeContent.split('\n');
+
+			for (const line of lines) {
+				const lowerLine = line.toLowerCase();
+
+				// Check if line contains any homepage keywords
+				const hasHomepageKeyword = homepageKeywords.some(keyword =>
+					lowerLine.includes(keyword)
+				);
+
+				if (hasHomepageKeyword) {
+					// Extract URLs from the line using regex
+					const urlRegex = /https?:\/\/[^\s\)]+/gi;
+					const urls = line.match(urlRegex);
+
+					if (urls && urls.length > 0) {
+						// Return the first valid URL found
+						for (const url of urls) {
+							// Clean up URL (remove trailing punctuation)
+							const cleanUrl = url.replace(/[.,;:!\?\)]+$/, '');
+
+							// Skip GitHub URLs and other common non-homepage URLs
+							if (!cleanUrl.includes('github.com') &&
+								!cleanUrl.includes('linkedin.com') &&
+								!cleanUrl.includes('twitter.com') &&
+								!cleanUrl.includes('facebook.com') &&
+								!cleanUrl.includes('instagram.com')) {
+
+								console.log(`🔗 Found potential homepage in README: ${cleanUrl}`);
+								return cleanUrl;
+							}
+						}
+					}
+				}
+			}
+
+			// Also check for markdown link patterns like [Demo](url) or [Website](url)
+			const markdownLinkRegex = /\[([^\]]*(?:website|demo|live|preview|app|site|deployed)[^\]]*)\]\(([^)]+)\)/gi;
+			let match;
+
+			while ((match = markdownLinkRegex.exec(readmeContent)) !== null) {
+				const url = match[2].trim();
+
+				// Skip GitHub URLs
+				if (!url.includes('github.com')) {
+					console.log(`🔗 Found homepage via markdown link: ${url}`);
+					return url;
+				}
+			}
+
+			return null;
+		} catch (error) {
+			console.error('❌ Error extracting homepage from README:', error);
+			return null;
+		}
+	}
+
 	async extractImagesFromReadme(readmeContent: string, repoUrl: string): Promise<ImageItem[]> {
 		const images: ImageItem[] = [];
 
 		try {
+			// Parse markdown content
 			const processor = unified().use(remarkParse);
 			const tree = processor.parse(readmeContent);
 
 			const imagePromises: Promise<void>[] = [];
 
+			// Extract images from markdown image nodes
 			visit(tree, 'image', (node: { url: string }) => {
 				const imageUrl = node.url;
-
-				// Convert relative URLs to absolute
-				let absoluteUrl = imageUrl;
-				if (imageUrl.startsWith('./') || imageUrl.startsWith('../')) {
-					absoluteUrl = `${repoUrl}/raw/main/${imageUrl.replace('./', '')}`;
-				} else if (imageUrl.startsWith('/')) {
-					absoluteUrl = `${repoUrl}${imageUrl}`;
-				} else if (!imageUrl.startsWith('http')) {
-					absoluteUrl = `${repoUrl}/raw/main/${imageUrl}`;
-				}
-
-				const promise = this.getImageDimensions(absoluteUrl).then(dimensions => {
-					if (dimensions && this.isValidImage(dimensions.width, dimensions.height)) {
-						images.push({
-							url: absoluteUrl,
-							width: dimensions.width,
-							height: dimensions.height,
-							type: 'readme'
-						});
+				const promise = this.processImageUrl(imageUrl, repoUrl, 'readme').then(imageItem => {
+					if (imageItem) {
+						images.push(imageItem);
 					}
-				}).catch(error => {
-					console.error('Error processing image:', absoluteUrl, error);
 				});
-
 				imagePromises.push(promise);
 			});
 
+			// Also extract images from HTML img tags
+			const imgTagRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi;
+			let match;
+
+			while ((match = imgTagRegex.exec(readmeContent)) !== null) {
+				const imageUrl = match[1];
+				const promise = this.processImageUrl(imageUrl, repoUrl, 'html').then(imageItem => {
+					if (imageItem) {
+						images.push(imageItem);
+					}
+				});
+				imagePromises.push(promise);
+			}
+
 			await Promise.all(imagePromises);
 		} catch (error) {
-			console.error('Error parsing README:', error);
+			console.error('Error parsing README for images:', error);
 		}
 
-		return images;
+		// Remove duplicates based on URL
+		const uniqueImages = images.filter((image, index, self) =>
+			index === self.findIndex(i => i.url === image.url)
+		);
+
+		return uniqueImages;
+	}
+
+	async processImageUrl(imageUrl: string, repoUrl: string, type: string): Promise<ImageItem | null> {
+		try {
+			// Convert relative URLs to absolute
+			let absoluteUrl = imageUrl;
+			if (imageUrl.startsWith('./') || imageUrl.startsWith('../')) {
+				absoluteUrl = `${repoUrl}/raw/main/${imageUrl.replace('./', '')}`;
+			} else if (imageUrl.startsWith('/')) {
+				absoluteUrl = `${repoUrl}${imageUrl}`;
+			} else if (!imageUrl.startsWith('http')) {
+				absoluteUrl = `${repoUrl}/raw/main/${imageUrl}`;
+			}
+
+			const dimensions = await this.getImageDimensions(absoluteUrl);
+
+			if (dimensions && this.isValidImage(dimensions.width, dimensions.height)) {
+				return {
+					url: absoluteUrl,
+					width: dimensions.width,
+					height: dimensions.height,
+					type: type
+				};
+			}
+
+			return null;
+		} catch (error) {
+			console.error('Error processing image URL:', imageUrl, error);
+			return null;
+		}
 	}
 
 	async getImageDimensions(imageUrl: string): Promise<{ width: number; height: number } | null> {
@@ -352,10 +455,18 @@ class RepositoryFetcher {
 				console.log(`🖼️  Found ${readmeImages.length} images in README`);
 			}
 
+			// Determine homepage URL
+			let homepageUrl = githubInfo.homepage;
+
+			// If no homepage in GitHub data, try to extract from README
+			if (!homepageUrl && readmeContent) {
+				homepageUrl = this.extractHomepageFromReadme(readmeContent);
+			}
+
 			// Take screenshot of homepage if available
 			let screenshotUrl: string | null = null;
-			if (githubInfo.homepage) {
-				const screenshot = await this.takeScreenshot(githubInfo.homepage);
+			if (homepageUrl) {
+				const screenshot = await this.takeScreenshot(homepageUrl);
 				if (screenshot) {
 					const fileName = `images/${repository.repository.replace('/', '-')}-${Date.now()}.png`;
 					screenshotUrl = await this.uploadToSupabaseStorage(screenshot, fileName);
@@ -378,26 +489,27 @@ class RepositoryFetcher {
 
 			// Update repository information in database
 			const updateQuery = `
-			     UPDATE repositories
-			     SET
-			       created_at = $1,
-			       readme = $2,
-			       license = $3,
-			       images = $4,
-			       homepage = $5,
-			       stars = $6,
-			       forks = $7
-			     WHERE id = $8
-			   `;
+				UPDATE repositories
+				SET
+					created_at = $1,
+					readme = $2,
+					license = $3,
+					images = $4,
+					homepage = $5,
+					stars = $6,
+					forks = $7
+				WHERE id = $8
+			`;
 
 			const licenseName = githubInfo.license?.name || null;
+			const filteredImages = allImages.filter(img => !img.url.includes('star-history.com'));
 
 			await this.dbClient.query(updateQuery, [
 				githubInfo.created_at,
 				readmeContent,
 				licenseName,
-				JSON.stringify(allImages),
-				githubInfo.homepage,
+				JSON.stringify(filteredImages),
+				homepageUrl,
 				githubInfo.stargazers_count,
 				githubInfo.forks_count,
 				repository.id
@@ -405,19 +517,28 @@ class RepositoryFetcher {
 
 			// Display results
 			console.log('\n🎉 Repository Information:');
-			console.log('─'.repeat(50));
+			console.log('─'.repeat(60));
 			console.log(`📛 Name: ${githubInfo.full_name}`);
 			console.log(`🗓️  Created: ${this.formatCreationDate(githubInfo.created_at)}`);
 			console.log(`🌟 Stars: ${githubInfo.stargazers_count.toLocaleString()}`);
 			console.log(`🍴 Forks: ${githubInfo.forks_count.toLocaleString()}`);
 			console.log(`📄 License: ${licenseName || 'Not specified'}`);
-			console.log(`🏠 Homepage: ${githubInfo.homepage || 'Not specified'}`);
+			console.log(`🏠 Homepage: ${homepageUrl || 'Not found'}`);
+			if (homepageUrl && !githubInfo.homepage) {
+				console.log(`   📝 Homepage source: README extraction`);
+			} else if (githubInfo.homepage) {
+				console.log(`   📝 Homepage source: GitHub repository data`);
+			}
 			console.log(`📖 README: ${readmeContent ? '✅ Found' : '❌ Not found'}`);
 			console.log(`🖼️  Images: ${allImages.length} found`);
+			if (readmeImages.length > 0) {
+				console.log(`   📄 README images: ${readmeImages.length}`);
+				console.log(`   🎨 Image types: ${[...new Set(readmeImages.map(img => img.type))].join(', ')}`);
+			}
 			if (screenshotUrl) {
 				console.log(`📸 Screenshot: ✅ Taken and uploaded`);
 			}
-			console.log('─'.repeat(50));
+			console.log('─'.repeat(60));
 
 		} catch (error) {
 			console.error(`❌ Error processing repository ${repository.repository}:`, error);
@@ -430,32 +551,32 @@ class RepositoryFetcher {
 			// Connect to database
 			await this.connect();
 
-			// Get all unprocessed repositories
-			console.log('📋 Fetching all unprocessed repositories...');
-			const unprocessedRepos = await this.getAllUnprocessedRepositories();
+			// Get all repositories with empty/null images
+			console.log('📋 Fetching repositories with empty/null images...');
+			const repositoriesToProcess = await this.getAllRepositoriesWithEmptyImages();
 
-			if (unprocessedRepos.length === 0) {
+			if (repositoriesToProcess.length === 0) {
 				console.log('✅ No repositories to process');
 				return;
 			}
 
-			console.log(`🚀 Starting batch processing of ${unprocessedRepos.length} repositories...\n`);
+			console.log(`🚀 Starting batch processing of ${repositoriesToProcess.length} repositories...\n`);
 
 			// Process each repository with 3-second delay between API calls
-			for (let i = 0; i < unprocessedRepos.length; i++) {
-				const repository = unprocessedRepos[i];
-				console.log(`\n📊 Progress: ${i + 1}/${unprocessedRepos.length} repositories processed`);
+			for (let i = 0; i < repositoriesToProcess.length; i++) {
+				const repository = repositoriesToProcess[i];
+				console.log(`\n📊 Progress: ${i + 1}/${repositoriesToProcess.length} repositories processed`);
 
 				await this.processRepository(repository);
 
 				// Add 3-second delay between API calls (GitHub rate limit: 60 req/min)
-				if (i < unprocessedRepos.length - 1) {
+				if (i < repositoriesToProcess.length - 1) {
 					console.log(`⏳ Waiting 3 seconds before next API call...`);
 					await new Promise(resolve => setTimeout(resolve, 3000));
 				}
 			}
 
-			console.log(`\n🎉 Batch processing completed! Processed ${unprocessedRepos.length} repositories.`);
+			console.log(`\n🎉 Batch processing completed! Processed ${repositoriesToProcess.length} repositories.`);
 
 		} catch (error) {
 			console.error('💥 Application error:', error);
@@ -468,7 +589,7 @@ class RepositoryFetcher {
 
 // Main execution
 async function main() {
-	console.log('🚀 Starting Repository Creation Date Fetcher...\n');
+	console.log('🚀 Starting Enhanced Repository Fetcher...\n');
 
 	// Validate required environment variables
 	const requiredEnvVars = [

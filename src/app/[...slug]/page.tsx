@@ -1,4 +1,4 @@
-import { supabase, Repository, ImageItem } from "@/lib/supabase";
+import { supabase, Repository } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RepositoryGrid } from "@/components/repository-grid";
@@ -168,7 +168,7 @@ async function getRepository(slug: string): Promise<{
     .from("repositories")
     .select("*")
     .neq("id", repository.id)
-    .not("updated_at", "is", null)
+    .eq("publish", true)
     .eq("languages", repository.languages)
     .order("created_at", { ascending: false })
     .limit(6);
@@ -226,16 +226,6 @@ const getDifficultyColor = (difficulty: string) => {
    return "bg-red-900 text-red-100 border-red-700";
   default:
    return "bg-muted text-muted-foreground border-border";
- }
-};
-
-const parseImages = (imagesString: string | null): ImageItem[] => {
- if (!imagesString) return [];
- try {
-  const parsed = JSON.parse(imagesString);
-  return Array.isArray(parsed) ? parsed : [];
- } catch {
-  return [];
  }
 };
 
@@ -576,7 +566,8 @@ export default async function RepositoryDetail({ params }: PageProps) {
       <div className="divide-y bg-background">
        {/* Project Previews */}
        {(() => {
-        const images = parseImages(repository.images as unknown as string);
+        const images = repository.images;
+
         return (
          images.length > 0 && (
           <div className="p-4 bg-background">

@@ -40,7 +40,7 @@ export interface Repository {
 	license: string
 	homepage: string
 	repository: string
-	images: ImageItem[] | null
+	images: ImageItem[]
 	created_at: string
 	updated_at: string
 	archived: boolean

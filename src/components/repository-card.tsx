@@ -13,8 +13,16 @@ interface RepositoryCardProps {
  className?: string;
 }
 
+function formatDate(date: string): string {
+ return new Date(date).toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+ });
+}
+
 export function RepositoryCard({ repository, className }: RepositoryCardProps) {
- const [currentImageIndex] = useState(0);
+ const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [imageError, setImageError] = useState(false);
 
  const languages =
@@ -98,7 +106,14 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
         alt={images[currentImageIndex].url}
         fill
         className="object-cover"
-        onError={() => setImageError(true)}
+        onError={() => {
+         setImageError(true);
+         setCurrentImageIndex(
+          images.length > currentImageIndex
+           ? currentImageIndex + 1
+           : currentImageIndex
+         );
+        }}
        />
       )
      ) : (
@@ -115,6 +130,9 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
       <h3 className="font-serif font-semibold text-foreground line-clamp-2 leading-tight text-sm">
        {repository.repository}
       </h3>
+      <div className="text-xs text-muted-foreground">
+       {formatDate(repository.created_at)}
+      </div>
      </div>
 
      {/* Description */}
