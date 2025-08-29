@@ -81,8 +81,7 @@ async function getInitialData(): Promise<{
   const { count: totalCount, error: countError } = await supabase
    .from("repositories")
    .select("*", { count: "exact", head: true })
-   .eq("archived", false)
-   .eq("disabled", false);
+   .not("updated_at", "is", null);
 
   if (countError) throw countError;
 
@@ -90,8 +89,7 @@ async function getInitialData(): Promise<{
   const { data: recommendedData, error: recommendedError } = await supabase
    .from("repositories")
    .select("*")
-   .eq("archived", false)
-   .eq("disabled", false)
+   .not("updated_at", "is", null)
    .gte("stars", 1000) // At least 1k stars
    .lte("stars", 10000) // Less than 10K stars
    .order("created_at", { ascending: false }) // Order by forks for diversity
@@ -104,8 +102,7 @@ async function getInitialData(): Promise<{
   const { data: initialData, error: initialError } = await supabase
    .from("repositories")
    .select("*")
-   .eq("archived", false)
-   .eq("disabled", false)
+   .not("updated_at", "is", null)
    .order("created_at", { ascending: false })
    .limit(ITEMS_PER_PAGE);
 

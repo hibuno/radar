@@ -75,8 +75,7 @@ export function HomeClient({
     let query = supabase
      .from("repositories")
      .select("*")
-     .eq("archived", false)
-     .eq("disabled", false);
+     .not("updated_at", "is", null);
 
     // Apply search filter
     if (searchFilters.search) {

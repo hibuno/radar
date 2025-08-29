@@ -27,12 +27,16 @@ CREATE TABLE public.repositories (
 ) TABLESPACE pg_default;
 
 -- Add paper-related columns to repositories table
-ALTER TABLE repositories 
+ALTER TABLE repositories
 ADD COLUMN IF NOT EXISTS arxiv_url TEXT,
 ADD COLUMN IF NOT EXISTS huggingface_url TEXT,
 ADD COLUMN IF NOT EXISTS paper_authors TEXT,
 ADD COLUMN IF NOT EXISTS paper_abstract TEXT,
 ADD COLUMN IF NOT EXISTS paper_scraped_at TIMESTAMP WITH TIME ZONE;
+
+-- Add readme column for storing README content
+ALTER TABLE repositories
+ADD COLUMN IF NOT EXISTS readme TEXT;
 
 -- Create index on huggingface_url for faster lookups
 CREATE INDEX IF NOT EXISTS idx_repositories_huggingface_url ON repositories(huggingface_url);

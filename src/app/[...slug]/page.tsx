@@ -30,6 +30,7 @@ import Threads from "@/components/threads";
 import Image from "next/image";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ShareDialog from "@/components/share-dialog";
+import ReactMarkdown from "react-markdown";
 
 interface PageProps {
  params: {
@@ -174,8 +175,7 @@ async function getRepository(slug: string): Promise<{
     .from("repositories")
     .select("*")
     .neq("id", repository.id)
-    .eq("archived", false)
-    .eq("disabled", false)
+    .not("updated_at", "is", null)
     .eq("languages", repository.languages)
     .order("created_at", { ascending: false })
     .limit(6);
@@ -343,7 +343,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
       className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
      >
       <ArrowLeft className="w-4 h-4" />
-      Back to Trending
+      Back to Home
      </Link>
      <div className="flex items-center gap-2">
       <Button
@@ -483,8 +483,71 @@ export default async function RepositoryDetail({ params }: PageProps) {
           </h2>
          </div>
          <div className="prose max-w-none">
-          <div className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm prose">
-           {repository.content}
+          <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none">
+           <ReactMarkdown
+            components={{
+             h1: ({ children }) => (
+              <h1 className="text-lg font-bold text-foreground mt-4 mb-2">
+               {children}
+              </h1>
+             ),
+             h2: ({ children }) => (
+              <h2 className="text-base font-bold text-foreground mt-3 mb-2">
+               {children}
+              </h2>
+             ),
+             h3: ({ children }) => (
+              <h3 className="text-sm font-bold text-foreground mt-2 mb-1">
+               {children}
+              </h3>
+             ),
+             p: ({ children }) => (
+              <p className="mb-2 leading-relaxed">{children}</p>
+             ),
+             ul: ({ children }) => (
+              <ul className="list-disc list-inside mb-2 space-y-1">
+               {children}
+              </ul>
+             ),
+             ol: ({ children }) => (
+              <ol className="list-decimal list-inside mb-2 space-y-1">
+               {children}
+              </ol>
+             ),
+             li: ({ children }) => <li className="text-sm">{children}</li>,
+             code: ({ children }) => (
+              <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+               {children}
+              </code>
+             ),
+             pre: ({ children }) => (
+              <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2">
+               {children}
+              </pre>
+             ),
+             blockquote: ({ children }) => (
+              <blockquote className="border-l-2 border-muted pl-3 italic text-muted-foreground">
+               {children}
+              </blockquote>
+             ),
+             strong: ({ children }) => (
+              <strong className="font-bold text-foreground">{children}</strong>
+             ),
+             em: ({ children }) => <em className="italic">{children}</em>,
+             a: ({ href, children }) => (
+              <a
+               href={href}
+               className="text-blue-600 hover:text-blue-800 underline"
+               target="_blank"
+               rel="noopener noreferrer"
+              >
+               {children}
+              </a>
+             ),
+            }}
+           >
+            {repository.content}
+           </ReactMarkdown>
           </div>
          </div>
         </div>

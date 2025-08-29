@@ -8,8 +8,7 @@ export async function GET() {
 		const { data: repositories, error } = await supabase
 			.from("repositories")
 			.select("repository, updated_at, created_at")
-			.eq("archived", false)
-			.eq("disabled", false)
+			.not("updated_at", "is", null)
 			.order("stars", { ascending: false })
 			.limit(1000); // Limit to prevent sitemap from being too large
 
