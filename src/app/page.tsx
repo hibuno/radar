@@ -93,7 +93,7 @@ async function getInitialData(): Promise<{
    .eq("archived", false)
    .eq("disabled", false)
    .gte("stars", 10000) // At least 100 stars
-   .order("forks", { ascending: false }) // Order by forks for diversity
+   .order("created_at", { ascending: false }) // Order by forks for diversity
    .limit(6);
 
   if (recommendedError) throw recommendedError;
@@ -105,7 +105,7 @@ async function getInitialData(): Promise<{
    .select("*")
    .eq("archived", false)
    .eq("disabled", false)
-   .order("stars", { ascending: false })
+   .order("created_at", { ascending: false })
    .limit(ITEMS_PER_PAGE);
 
   if (initialError) throw initialError;

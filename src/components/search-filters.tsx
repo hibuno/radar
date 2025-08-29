@@ -88,7 +88,7 @@ export function SearchFilters({
    search: "",
    language: "",
    experience: "",
-   sortBy: "stars",
+   sortBy: "created_at",
    sortOrder: "desc",
   });
  }, [onFiltersChange]);
@@ -168,7 +168,7 @@ export function SearchFilters({
       <Button variant="outline" size="sm" className="h-8">
        Sort by{" "}
        {SORT_OPTIONS.find((opt) => opt.value === filters.sortBy)?.label ||
-        "Stars"}
+        "Recently Added"}
        <ChevronDown className="ml-2 h-3 w-3" />
       </Button>
      </DropdownMenuTrigger>

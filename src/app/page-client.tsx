@@ -43,7 +43,7 @@ export function HomeClient({
   search: "",
   language: "",
   experience: "",
-  sortBy: "stars",
+  sortBy: "created_at",
   sortOrder: "desc",
  });
 
