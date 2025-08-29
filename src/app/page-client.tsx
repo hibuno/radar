@@ -186,7 +186,7 @@ export function HomeClient({
        />
       </div>
       <p className="text-sm text-muted-foreground hidden md:block relative z-10">
-       More than 500 ⭐️ this month
+       Reaching first 1000 ⭐️ this month
       </p>
      </div>
      <RepositoryColumns repositories={recommendedRepos} />

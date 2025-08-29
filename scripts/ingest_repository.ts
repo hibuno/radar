@@ -97,10 +97,7 @@ class RepositoryFetcher {
 			const query = `
 				SELECT * FROM repositories
 				WHERE 
-					images IS NULL 
-					OR images = '[]'::jsonb 
-					OR jsonb_array_length(images) = 0
-					OR created_at IS NULL
+					images IS NULL AND created_at IS NULL
 			`;
 
 			const result = await this.dbClient.query(query);

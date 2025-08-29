@@ -90,8 +90,8 @@ async function getInitialData(): Promise<{
    .from("repositories")
    .select("*")
    .eq("publish", true)
-   .gte("stars", 500) // At least 1k stars
-   .lte("stars", 6000) // Less than 5K stars
+   .gte("stars", 50) // At least 50 stars
+   .lte("stars", 1000) // Less than 1000 stars
    .gte(
     "created_at",
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
@@ -105,7 +105,7 @@ async function getInitialData(): Promise<{
     ).toISOString()
    ) // Start of the next month
    .order("stars", { ascending: false }) // Order by forks for diversity
-   .limit(6);
+   .limit(12);
 
   if (recommendedError) throw recommendedError;
   const recommendedRepos = recommendedData || [];
