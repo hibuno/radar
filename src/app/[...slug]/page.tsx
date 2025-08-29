@@ -473,11 +473,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
           <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm max-w-none">
            <ReactMarkdown
             components={{
-             h1: ({ children }) => (
-              <h1 className="text-lg font-bold text-foreground mt-4 mb-2">
-               {children}
-              </h1>
-             ),
+             h1: ({ children }) => <h1 className="sr-only">{children}</h1>,
              h2: ({ children }) => (
               <h2 className="text-base font-bold text-foreground mt-3 mb-2">
                {children}

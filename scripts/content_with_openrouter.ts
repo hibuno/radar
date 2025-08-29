@@ -180,10 +180,10 @@ class ContentEnricher {
 	async getRepositoriesNeedingEnrichment(): Promise<Repository[]> {
 		try {
 			const query = `
-				SELECT id, repository, readme, summary, content
+				SELECT id, repository, readme
 				FROM repositories
 				WHERE readme IS NOT NULL
-				AND (summary IS NULL OR content IS NULL)
+				AND content IS NULL
 				LIMIT 50
 			`;
 
@@ -219,7 +219,7 @@ class ContentEnricher {
 
 			await this.waitForRateLimit();
 
-			const prompt = `Based on the following GitHub repository README content, create a human-written article about this project. The article should be engaging, informative, and written in a natural, conversational style.
+			const prompt = `Based on the following GitHub repository README content in English, create a human-written article about this project. The article should be engaging, informative, and written in a natural, conversational style.
 
 README Content:
 ${cleanedReadme}
