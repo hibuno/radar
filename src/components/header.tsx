@@ -1,4 +1,3 @@
-import { HatGlasses } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,15 +8,21 @@ import {
  DialogTitle,
  DialogTrigger,
 } from "@/components/ui/dialog";
+import Image from "next/image";
 
 export function Header() {
  return (
   <div className="flex items-center justify-between border-b p-6 sticky top-0 z-50 max-w-6xl mx-auto border-x bg-background">
    <div className="flex items-center gap-4">
-    <Link href="/" className="flex items-center gap-2">
-     <HatGlasses className="w-10 h-10 p-1.5 rounded-sm bg-muted" />
+    <Link href="/" className="flex items-center gap-1">
+     <Image
+      src="/logo/logo-dark.svg"
+      alt="The Spy Project"
+      width={50}
+      height={50}
+     />
      <div>
-      <h1 className="text-lg font-serif font-bold text-foreground">
+      <h1 className="text-md font-serif font-bold text-foreground">
        <span>The Spy Project</span>
       </h1>
       <p className="text-muted-foreground text-xs">
