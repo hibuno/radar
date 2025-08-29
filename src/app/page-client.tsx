@@ -1,29 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase, Repository } from "@/lib/supabase";
 import { RepositoryGrid } from "@/components/repository-grid";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import Lightning from "@/components/lightning";
+import { RepositoryColumns } from "@/components/repository-columns";
+import {
+ SearchFilters,
+ type SearchFilters as SearchFiltersType,
+} from "@/components/search-filters";
+import Galaxy from "@/components/galaxy";
 
 const ITEMS_PER_PAGE = 12;
 
 interface HomeClientProps {
  initialRepositories: Repository[];
- popularRepos: Repository[];
  recommendedRepos: Repository[];
  initialTotalCount: number;
 }
 
 export function HomeClient({
  initialRepositories,
- popularRepos,
  recommendedRepos,
  initialTotalCount,
 }: HomeClientProps) {
  const [repositories, setRepositories] =
+  useState<Repository[]>(initialRepositories);
+ const [filteredRepositories, setFilteredRepositories] =
   useState<Repository[]>(initialRepositories);
  const [loading, setLoading] = useState(false);
  const [loadingMore, setLoadingMore] = useState(false);
@@ -32,66 +38,117 @@ export function HomeClient({
  );
  const [page, setPage] = useState(1);
  const [error, setError] = useState<string | null>(null);
+ const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
+ const [filters, setFilters] = useState<SearchFiltersType>({
+  search: "",
+  language: "",
+  experience: "",
+  sortBy: "stars",
+  sortOrder: "desc",
+ });
 
- // Get IDs of repositories already shown in featured sections
- const featuredIds = new Set([
-  ...popularRepos.map((repo) => repo.id),
-  ...recommendedRepos.map((repo) => repo.id),
- ]);
-
- const fetchRepositories = async (pageNum = 1) => {
-  try {
-   if (pageNum === 1) setLoading(true);
-   else setLoadingMore(true);
-
-   setError(null);
-
-   const from = (pageNum - 1) * ITEMS_PER_PAGE;
-   const to = from + ITEMS_PER_PAGE - 1;
-
-   const { data, error } = await supabase
-    .from("repositories")
-    .select("*")
-    .eq("archived", false)
-    .eq("disabled", false)
-    .not("id", "in", `(${Array.from(featuredIds).join(",")})`)
-    .order("stars", { ascending: false })
-    .range(from, to);
-
-   if (error) throw error;
-
-   const newData = data || [];
-
-   if (pageNum === 1) {
-    setRepositories(newData);
-    setPage(1);
-   } else {
-    setRepositories((prev) => [...prev, ...newData]);
+ // Extract unique languages from all repositories
+ useEffect(() => {
+  const languageSet = new Set<string>();
+  [...recommendedRepos, ...repositories].forEach((repo) => {
+   if (repo.languages) {
+    repo.languages.split(",").forEach((lang) => {
+     const trimmedLang = lang.trim();
+     if (trimmedLang) languageSet.add(trimmedLang);
+    });
    }
+  });
+  setAvailableLanguages(Array.from(languageSet).sort());
+ }, [recommendedRepos, repositories]);
 
-   setHasMore(newData.length === ITEMS_PER_PAGE);
-   if (pageNum > 1) {
-    setPage(pageNum);
+ const fetchRepositories = useCallback(
+  async (pageNum = 1, searchFilters = filters) => {
+   try {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    setError(null);
+
+    const from = (pageNum - 1) * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    let query = supabase
+     .from("repositories")
+     .select("*")
+     .eq("archived", false)
+     .eq("disabled", false);
+
+    // Apply search filter
+    if (searchFilters.search) {
+     query = query.or(
+      `title.ilike.%${searchFilters.search}%,summary.ilike.%${searchFilters.search}%,repository.ilike.%${searchFilters.search}%,languages.ilike.%${searchFilters.search}%,tags.ilike.%${searchFilters.search}%`
+     );
+    }
+
+    // Apply language filter
+    if (searchFilters.language) {
+     query = query.ilike("languages", `%${searchFilters.language}%`);
+    }
+
+    // Apply experience filter
+    if (searchFilters.experience) {
+     query = query.ilike("experience", `%${searchFilters.experience}%`);
+    }
+
+    // Apply sorting
+    const ascending = searchFilters.sortOrder === "asc";
+    query = query.order(searchFilters.sortBy, { ascending });
+
+    const { data, error } = await query.range(from, to);
+
+    if (error) throw error;
+
+    const newData = data || [];
+
+    if (pageNum === 1) {
+     setRepositories(newData);
+     setFilteredRepositories(newData);
+     setPage(1);
+    } else {
+     setRepositories((prev) => [...prev, ...newData]);
+     setFilteredRepositories((prev) => [...prev, ...newData]);
+    }
+
+    setHasMore(newData.length === ITEMS_PER_PAGE);
+    if (pageNum > 1) {
+     setPage(pageNum);
+    }
+   } catch (err) {
+    setError(err instanceof Error ? err.message : "An error occurred");
+   } finally {
+    setLoading(false);
+    setLoadingMore(false);
    }
-  } catch (err) {
-   setError(err instanceof Error ? err.message : "An error occurred");
-  } finally {
-   setLoading(false);
-   setLoadingMore(false);
-  }
- };
+  },
+  [filters]
+ );
 
  const loadMore = () => {
   if (!loadingMore && hasMore) {
-   fetchRepositories(page + 1);
+   fetchRepositories(page + 1, filters);
   }
  };
 
  const handleRefresh = () => {
   setPage(1);
   setHasMore(true);
-  fetchRepositories();
+  fetchRepositories(1, filters);
  };
+
+ const handleFiltersChange = useCallback(
+  (newFilters: SearchFiltersType) => {
+   setFilters(newFilters);
+   setPage(1);
+   setHasMore(true);
+   fetchRepositories(1, newFilters);
+  },
+  [fetchRepositories]
+ );
 
  if (error) {
   return (
@@ -115,21 +172,28 @@ export function HomeClient({
 
  return (
   <div>
-   {/* Most Popular Section */}
-   {popularRepos.length > 0 && (
+   {/* Rising Stars Section */}
+   {recommendedRepos.length > 0 && (
     <>
      <div className="flex items-center justify-between px-6 py-4 border-b relative bg-black overflow-hidden">
       <h2 className="font-serif font-bold text-foreground z-10">
-       Most Popular
+       The Rising Stars
       </h2>
-      <div className="absolute z-0">
-       <Lightning hue={0} xOffset={0} speed={1} intensity={1} size={1} />
+      <div className="absolute z-0 left-0 right-0 w-full h-full">
+       <Galaxy
+        mouseRepulsion={false}
+        mouseInteraction={false}
+        density={0.14}
+        glowIntensity={0.4}
+        saturation={0.8}
+        hueShift={180}
+       />
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground hidden md:block relative z-10">
        Repositories with the highest star count
       </p>
      </div>
-     <RepositoryGrid repositories={popularRepos} />
+     <RepositoryColumns repositories={recommendedRepos} />
     </>
    )}
 
@@ -142,9 +206,17 @@ export function HomeClient({
      <div className="absolute z-0">
       <Lightning hue={250} xOffset={1} speed={0.8} intensity={0.6} size={1} />
      </div>
-     <p className="text-sm text-muted-foreground">
+     <p className="text-sm text-muted-foreground hidden md:block">
       {initialTotalCount.toLocaleString()}+ total repositories
      </p>
+    </div>
+
+    <div className="bg-background border-b px-6 py-4">
+     <SearchFilters
+      filters={filters}
+      onFiltersChange={handleFiltersChange}
+      availableLanguages={availableLanguages}
+     />
     </div>
 
     {loading ? (
@@ -166,7 +238,7 @@ export function HomeClient({
       loading={loadingMore}
       onLoadMore={loadMore}
      >
-      <RepositoryGrid repositories={repositories} />
+      <RepositoryGrid repositories={filteredRepositories} />
       {loadingMore && (
        <div className="flex items-center justify-center py-8">
         <div className="text-center space-y-2">

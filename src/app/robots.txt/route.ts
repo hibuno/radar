@@ -1,7 +1,7 @@
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trending.hibuno.com';
-  
-  const robotsTxt = `User-agent: *
+	const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spy.hibuno.com';
+
+	const robotsTxt = `User-agent: *
 Allow: /
 
 # Sitemap
@@ -48,10 +48,10 @@ Disallow: /
 User-agent: Claude-Web
 Disallow: /`;
 
-  return new Response(robotsTxt, {
-    headers: {
-      'Content-Type': 'text/plain',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-    },
-  });
+	return new Response(robotsTxt, {
+		headers: {
+			'Content-Type': 'text/plain',
+			'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+		},
+	});
 }

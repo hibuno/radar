@@ -19,6 +19,13 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 	}
 })
 
+export interface ImageItem {
+	url: string
+	type?: string
+	width?: number
+	height?: number
+}
+
 export interface Repository {
 	id: string
 	title: string
@@ -34,7 +41,7 @@ export interface Repository {
 	license: string
 	homepage: string
 	repository: string
-	images: Record<string, unknown> | null
+	images: ImageItem[] | null
 	created_at: string
 	updated_at: string
 	archived: boolean

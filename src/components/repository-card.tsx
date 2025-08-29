@@ -1,17 +1,19 @@
 "use client";
 
-import { Repository } from "@/lib/supabase";
+import { ImageItem, Repository } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
 import { Star, GitFork, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface RepositoryCardProps {
  repository: Repository;
+ className?: string;
 }
 
-export function RepositoryCard({ repository }: RepositoryCardProps) {
+export function RepositoryCard({ repository, className }: RepositoryCardProps) {
  const [currentImageIndex] = useState(0);
  const [imageError, setImageError] = useState(false);
 
@@ -22,25 +24,15 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
    .filter(Boolean) || [];
 
  // Parse images from repository.images field
- const getImages = (): string[] => {
+ const getImages = (): ImageItem[] => {
   if (!repository.images) return [];
 
-  try {
-   if (typeof repository.images === "string") {
-    return JSON.parse(repository.images);
-   }
-   return Array.isArray(repository.images) ? repository.images : [];
-  } catch {
-   // Type assertion to handle the TypeScript narrowing issue
-   const imageStr = repository.images as unknown as string;
-   if (typeof imageStr === "string") {
-    return imageStr
-     .split(",")
-     .map((url: string) => url.trim())
-     .filter(Boolean);
-   }
-   return [];
+  if (typeof repository.images === "string") {
+   return JSON.parse(repository.images);
   }
+  return Array.isArray(repository.images)
+   ? repository.images.map((img) => (typeof img === "string" ? img : img))
+   : [];
  };
 
  const images = getImages();
@@ -91,19 +83,24 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
  return (
   <Link
    href={`/${repository.repository}`}
-   className="block w-[calc(100%/2-1px)] md:w-[calc(100%/3-1px)] bg-background"
+   className={cn(
+    "block w-[calc(100%/2-1px)] md:w-[calc(100%/3-1px)] bg-background overflow-hidden",
+    className
+   )}
   >
    <div className="repo-card">
     {/* Preview Image */}
-    <div className="relative h-32 bg-muted overflow-hidden">
+    <div className="relative h-64 bg-muted overflow-hidden">
      {hasImages ? (
-      <Image
-       src={(images[currentImageIndex] as unknown as { url: string }).url}
-       alt={(images[currentImageIndex] as unknown as { url: string }).url}
-       fill
-       className="object-cover"
-       onError={() => setImageError(true)}
-      />
+      images[currentImageIndex].url !== "" && (
+       <Image
+        src={images[currentImageIndex].url}
+        alt={images[currentImageIndex].url}
+        fill
+        className="object-cover"
+        onError={() => setImageError(true)}
+       />
+      )
      ) : (
       <div className="flex items-center justify-center h-full text-muted-foreground">
        <ImageIcon className="w-8 h-8" />

@@ -1,6 +1,5 @@
 import { supabase, Repository } from "@/lib/supabase";
 import { HomeClient } from "@/app/page-client";
-import { Radar } from "@/components/radar";
 import type { Metadata } from "next";
 
 const ITEMS_PER_PAGE = 12;
@@ -28,7 +27,7 @@ export const metadata: Metadata = {
  creator: "The Spy Project",
  publisher: "The Spy Project",
  metadataBase: new URL(
-  process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com"
  ),
  alternates: {
   canonical: "/",
@@ -74,7 +73,6 @@ export const metadata: Metadata = {
 
 async function getInitialData(): Promise<{
  repositories: Repository[];
- popularRepos: Repository[];
  recommendedRepos: Repository[];
  totalCount: number;
 }> {
@@ -88,44 +86,25 @@ async function getInitialData(): Promise<{
 
   if (countError) throw countError;
 
-  // Get most popular repositories (top 6 by stars)
-  const { data: popularData, error: popularError } = await supabase
-   .from("repositories")
-   .select("*")
-   .eq("archived", false)
-   .eq("disabled", false)
-   .order("stars", { ascending: false })
-   .limit(6);
-
-  if (popularError) throw popularError;
-  const popularRepos = popularData || [];
-
-  // Get recommended repositories (high stars + recent activity, excluding popular ones)
-  const popularIds = popularRepos.map((repo) => repo.id);
+  // Get recommended repositories (high stars + recent activity)
   const { data: recommendedData, error: recommendedError } = await supabase
    .from("repositories")
    .select("*")
    .eq("archived", false)
    .eq("disabled", false)
-   .not("id", "in", `(${popularIds.join(",")})`)
-   .gte("stars", 100) // At least 100 stars
+   .gte("stars", 10000) // At least 100 stars
    .order("forks", { ascending: false }) // Order by forks for diversity
    .limit(6);
 
   if (recommendedError) throw recommendedError;
   const recommendedRepos = recommendedData || [];
 
-  // Get initial repositories for infinite scroll (excluding featured ones)
-  const featuredIds = [
-   ...popularIds,
-   ...recommendedRepos.map((repo) => repo.id),
-  ];
+  // Get initial repositories for infinite scroll
   const { data: initialData, error: initialError } = await supabase
    .from("repositories")
    .select("*")
    .eq("archived", false)
    .eq("disabled", false)
-   .not("id", "in", `(${featuredIds.join(",")})`)
    .order("stars", { ascending: false })
    .limit(ITEMS_PER_PAGE);
 
@@ -134,7 +113,6 @@ async function getInitialData(): Promise<{
 
   return {
    repositories,
-   popularRepos,
    recommendedRepos,
    totalCount: totalCount || 0,
   };
@@ -142,7 +120,6 @@ async function getInitialData(): Promise<{
   console.error("Error fetching initial data:", err);
   return {
    repositories: [],
-   popularRepos: [],
    recommendedRepos: [],
    totalCount: 0,
   };
@@ -150,8 +127,7 @@ async function getInitialData(): Promise<{
 }
 
 export default async function Home() {
- const { repositories, popularRepos, recommendedRepos, totalCount } =
-  await getInitialData();
+ const { repositories, recommendedRepos, totalCount } = await getInitialData();
 
  const jsonLd = {
   "@context": "https://schema.org",
@@ -159,7 +135,7 @@ export default async function Home() {
   name: "The Spy Project - Trending Repositories",
   description:
    "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
   mainEntity: {
    "@type": "ItemList",
    name: "Trending Repositories",
@@ -195,14 +171,14 @@ export default async function Home() {
      "@type": "ListItem",
      position: 1,
      name: "Home",
-     item: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+     item: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
     },
    ],
   },
   publisher: {
    "@type": "Organization",
    name: "The Spy Project",
-   url: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+   url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
   },
  };
 
@@ -213,13 +189,9 @@ export default async function Home() {
     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
    />
    <div className="max-w-6xl mx-auto border-x">
-    {/* Radar Section */}
-    <Radar />
-
     {/* Main Content */}
     <HomeClient
      initialRepositories={repositories}
-     popularRepos={popularRepos}
      recommendedRepos={recommendedRepos}
      initialTotalCount={totalCount}
     />

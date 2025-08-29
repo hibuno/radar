@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
 export async function GET() {
-	const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trending.hibuno.com';
+	const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spy.hibuno.com';
 
 	try {
 		// Get all repositories for sitemap

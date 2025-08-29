@@ -1,4 +1,4 @@
-import { supabase, Repository } from "@/lib/supabase";
+import { supabase, Repository, ImageItem } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RepositoryGrid } from "@/components/repository-grid";
@@ -17,13 +17,19 @@ import {
  Shield,
  Clock,
  GitBranch,
- Share2,
+ Users,
+ Network,
+ Gauge,
+ Rocket,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Lightning from "@/components/lightning";
 import type { Metadata } from "next";
 import Threads from "@/components/threads";
+import Image from "next/image";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import ShareDialog from "@/components/share-dialog";
 
 interface PageProps {
  params: {
@@ -64,8 +70,7 @@ export async function generateMetadata({
 
  const fullDescription = `${description}${stars}${languageText} Discover more trending repositories on The Spy Project.`;
 
- const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com";
+ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com";
  const canonicalUrl = `${baseUrl}/${slug}`;
 
  return {
@@ -217,6 +222,29 @@ const getExperienceColor = (experience: string) => {
  }
 };
 
+const getDifficultyColor = (difficulty: string) => {
+ switch (difficulty?.toLowerCase()) {
+  case "beginner":
+   return "bg-green-900 text-green-100 border-green-700";
+  case "intermediate":
+   return "bg-yellow-900 text-yellow-100 border-yellow-700";
+  case "advanced":
+   return "bg-red-900 text-red-100 border-red-700";
+  default:
+   return "bg-muted text-muted-foreground border-border";
+ }
+};
+
+const parseImages = (imagesString: string | null): ImageItem[] => {
+ if (!imagesString) return [];
+ try {
+  const parsed = JSON.parse(imagesString);
+  return Array.isArray(parsed) ? parsed : [];
+ } catch {
+  return [];
+ }
+};
+
 export default async function RepositoryDetail({ params }: PageProps) {
  const resolvedParams = await params;
  const slug = resolvedParams.slug.join("/");
@@ -263,7 +291,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
   publisher: {
    "@type": "Organization",
    name: "The Spy Project",
-   url: process.env.NEXT_PUBLIC_SITE_URL || "https://trending.hibuno.com",
+   url: process.env.NEXT_PUBLIC_SITE_URL || "https://spy.hibuno.com",
   },
   dateCreated: repository.created_at,
   dateModified: repository.updated_at || repository.created_at,
@@ -342,10 +370,35 @@ export default async function RepositoryDetail({ params }: PageProps) {
         </Link>
        </Button>
       )}
-      <Button variant="outline" size="sm" className="border-border">
-       <Share2 className="w-3.5 h-3.5 mr-1.5" />
-       Share
-      </Button>
+
+      {repository.arxiv_url && (
+       <Button asChild variant="outline" size="sm" className="border-border">
+        <Link
+         href={repository.arxiv_url}
+         target="_blank"
+         rel="noopener noreferrer"
+        >
+         <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+         View on arXiv
+        </Link>
+       </Button>
+      )}
+      {repository.huggingface_url && (
+       <Button asChild variant="outline" size="sm" className="border-border">
+        <Link
+         href={repository.huggingface_url}
+         target="_blank"
+         rel="noopener noreferrer"
+        >
+         Hugging Face
+        </Link>
+       </Button>
+      )}
+      <ShareDialog
+       slug={slug}
+       ownerRepo={getOwnerRepo()}
+       summary={repository.summary}
+      />
      </div>
     </div>
 
@@ -360,7 +413,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
         <h1 className="text-xl font-serif font-bold text-foreground mb-2">
          {getOwnerRepo()}
         </h1>
-        <div className="flex items-center gap-1.5 mb-2">
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
          {repository.experience && (
           <Badge
            className={`${getExperienceColor(
@@ -368,7 +421,27 @@ export default async function RepositoryDetail({ params }: PageProps) {
            )} border font-medium text-xs`}
           >
            <Award className="w-2.5 h-2.5 mr-1" />
-           {repository.experience}
+           {repository.experience} level needed
+          </Badge>
+         )}
+         {repository.usability && (
+          <Badge
+           className={`${getDifficultyColor(
+            repository.usability
+           )} border font-medium text-xs`}
+          >
+           <Gauge className="w-2.5 h-2.5 mr-1" />
+           {repository.usability} on how to use
+          </Badge>
+         )}
+         {repository.deployment && (
+          <Badge
+           className={`${getDifficultyColor(
+            repository.deployment
+           )} border font-medium text-xs`}
+          >
+           <Rocket className="w-2.5 h-2.5 mr-1" />
+           {repository.deployment} on deployment
           </Badge>
          )}
          {isTrending && (
@@ -417,10 +490,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
        )}
 
        {/* Paper Information */}
-       {(repository.arxiv_url ||
-        repository.huggingface_url ||
-        repository.paper_authors ||
-        repository.paper_abstract) && (
+       {(repository.paper_authors || repository.paper_abstract) && (
         <div className="p-4 bg-background">
          <div className="flex items-center gap-2 mb-4">
           <div className="p-1.5 bg-muted rounded border border-border">
@@ -451,42 +521,16 @@ export default async function RepositoryDetail({ params }: PageProps) {
             </p>
            </div>
           )}
-          <div className="flex flex-wrap gap-2">
-           {repository.arxiv_url && (
-            <Button
-             asChild
-             variant="outline"
-             size="sm"
-             className="border-border"
-            >
-             <Link
-              href={repository.arxiv_url}
-              target="_blank"
-              rel="noopener noreferrer"
-             >
-              <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-              View on arXiv
-             </Link>
-            </Button>
-           )}
-           {repository.huggingface_url && (
-            <Button
-             asChild
-             variant="outline"
-             size="sm"
-             className="border-border"
-            >
-             <Link
-              href={repository.huggingface_url}
-              target="_blank"
-              rel="noopener noreferrer"
-             >
-              <Github className="w-3.5 h-3.5 mr-1.5" />
-              Hugging Face
-             </Link>
-            </Button>
-           )}
-          </div>
+          {repository.paper_scraped_at && (
+           <div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+             Paper Data Updated
+            </h3>
+            <p className="text-sm text-muted-foreground">
+             {formatDate(repository.paper_scraped_at)}
+            </p>
+           </div>
+          )}
          </div>
         </div>
        )}
@@ -494,6 +538,40 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
       {/* Sidebar */}
       <div className="divide-y bg-background">
+       {/* Project Previews */}
+       {(() => {
+        const images = parseImages(repository.images as unknown as string);
+        return (
+         images.length > 0 && (
+          <div className="p-4 bg-background">
+           <h3 className="text-base font-serif font-bold text-foreground mb-3">
+            Previews
+           </h3>
+           <ScrollArea>
+            <div className="flex gap-2">
+             {images.map(
+              (image, index) =>
+               image.url &&
+               image.url !== "" && (
+                <div key={index} className="flex-shrink-0">
+                 <Image
+                  src={image.url}
+                  alt={`Preview ${index + 1}`}
+                  className="object-cover rounded border border-border"
+                  width={image.width || 400}
+                  height={image.height || 200}
+                 />
+                </div>
+               )
+             )}
+            </div>
+            <ScrollBar orientation="horizontal" />
+           </ScrollArea>
+          </div>
+         )
+        );
+       })()}
+
        {/* Project Details */}
        <div className="p-4 bg-background">
         <h3 className="text-base font-serif font-bold text-foreground mb-3">
@@ -506,7 +584,11 @@ export default async function RepositoryDetail({ params }: PageProps) {
            <span className="text-xs">License</span>
           </div>
           <Badge variant="outline" className="text-xs border-border">
-           {repository.license || "Not specified"}
+           {repository.license
+            ? `${repository.license.substring(0, 28)}${
+               repository.license.length > 28 ? "..." : ""
+              }`
+            : "Not specified"}
           </Badge>
          </div>
          <div className="flex items-center justify-between">
@@ -583,6 +665,30 @@ export default async function RepositoryDetail({ params }: PageProps) {
            {formatNumber(repository.open_issues)}
           </span>
          </div>
+         {repository.network_count > 0 && (
+          <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+           <div className="flex items-center gap-1.5">
+            <Network className="w-3.5 h-3.5 text-purple-500" />
+            <span className="text-xs font-medium text-foreground">Network</span>
+           </div>
+           <span className="text-sm font-serif font-bold text-foreground">
+            {formatNumber(repository.network_count)}
+           </span>
+          </div>
+         )}
+         {repository.subscribers_count > 0 && (
+          <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
+           <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-xs font-medium text-foreground">
+             Subscribers
+            </span>
+           </div>
+           <span className="text-sm font-serif font-bold text-foreground">
+            {formatNumber(repository.subscribers_count)}
+           </span>
+          </div>
+         )}
         </div>
        </div>
 
