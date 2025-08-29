@@ -109,19 +109,34 @@ export async function generateMetadata({
    authors: [repository.paper_authors || "The Spy Project"],
    tags: repository.tags?.split(",").map((tag) => tag.trim()) || [],
    images: [
-    {
-     url: "/og-image.png",
-     width: 1200,
-     height: 630,
-     alt: `${ownerRepo} - Repository on The Spy Project`,
-    },
+    repository.images &&
+    repository.images.length > 0 &&
+    repository.images[0].url
+     ? {
+        url: repository.images[0].url,
+        width: repository.images[0].width || 1200,
+        height: repository.images[0].height || 630,
+        alt: `${ownerRepo} - Repository on The Spy Project`,
+       }
+     : {
+        url: "/banner.webp",
+        width: 1200,
+        height: 630,
+        alt: `${ownerRepo} - Repository on The Spy Project`,
+       },
    ],
   },
   twitter: {
    card: "summary_large_image",
    title: `${ownerRepo} - The Spy Project`,
    description: fullDescription.slice(0, 160),
-   images: ["/og-image.png"],
+   images: [
+    repository.images &&
+    repository.images.length > 0 &&
+    repository.images[0].url
+     ? repository.images[0].url
+     : "/banner.webp",
+   ],
    creator: "@thespyproject",
    site: "@thespyproject",
   },
