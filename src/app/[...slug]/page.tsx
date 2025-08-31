@@ -24,13 +24,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ShareDialog from "@/components/share-dialog";
 import ReactMarkdown from "react-markdown";
 import LazyIframe from "@/components/lazy-iframe";
 import LazyImage from "@/components/lazy-image";
+import { unstable_cache } from "next/cache";
 
 interface PageProps {
  params: {
@@ -46,159 +46,60 @@ const Threads = dynamic(() => import("@/components/threads"), {
  loading: () => <div className="w-1/2 h-[200px] bg-muted/20 rounded" />,
 });
 
-export async function generateMetadata({
- params,
-}: PageProps): Promise<Metadata> {
- const resolvedParams = await params;
- const slug = resolvedParams.slug.join("/");
- const { repository } = await getRepository(slug);
+const getRepository = unstable_cache(
+ async (
+  slug: string
+ ): Promise<{
+  repository: Repository | null;
+  relatedRepos: Repository[];
+ }> => {
+  try {
+   let repository: Repository | null = null;
 
- if (!repository) {
-  return {
-   title: "Repository Not Found - The Spy Project",
-   description: "The requested repository could not be found.",
-  };
- }
-
- const ownerRepo = repository.repository.split("/")[1];
-
- const description =
-  repository.summary ||
-  repository.content?.slice(0, 160) ||
-  `Explore ${ownerRepo} - a trending repository on The Spy Project.`;
- const stars = repository.stars
-  ? ` with ${repository.stars.toLocaleString()} stars`
-  : "";
- const languages = repository.languages
-  ? repository.languages.split(",").slice(0, 3).join(", ")
-  : "";
- const languageText = languages ? ` Built with ${languages}.` : "";
-
- const fullDescription = `${description}${stars}${languageText} Discover more trending repositories on The Spy Project.`;
-
- const baseUrl = "https://spy.hibuno.com";
- const canonicalUrl = `${baseUrl}/${slug}`;
-
- return {
-  title: `${ownerRepo} - The Spy Project`,
-  description: fullDescription.slice(0, 160),
-  keywords: [
-   ownerRepo,
-   "github repository",
-   "open source",
-   "trending",
-   ...(repository.languages?.split(",").map((lang) => lang.trim()) || []),
-   ...(repository.tags?.split(",").map((tag) => tag.trim()) || []),
-  ],
-  authors: [{ name: "The Spy Project" }],
-  creator: "The Spy Project",
-  publisher: "The Spy Project",
-  metadataBase: new URL(baseUrl),
-  alternates: {
-   canonical: canonicalUrl,
-  },
-  openGraph: {
-   title: `${ownerRepo} - The Spy Project`,
-   description: fullDescription.slice(0, 160),
-   url: canonicalUrl,
-   siteName: "The Spy Project",
-   locale: "en_US",
-   type: "article",
-   publishedTime: repository.created_at,
-   modifiedTime: repository.updated_at || repository.created_at,
-   authors: [repository.paper_authors || "The Spy Project"],
-   tags: repository.tags?.split(",").map((tag) => tag.trim()) || [],
-   images: [
-    repository.images &&
-    repository.images.length > 0 &&
-    repository.images[0].url
-     ? {
-        url: repository.images[0].url,
-        width: repository.images[0].width || 1200,
-        height: repository.images[0].height || 630,
-        alt: `${ownerRepo} - Repository on The Spy Project`,
-       }
-     : {
-        url: "/banner.webp",
-        width: 1200,
-        height: 630,
-        alt: `${ownerRepo} - Repository on The Spy Project`,
-       },
-   ],
-  },
-  twitter: {
-   card: "summary_large_image",
-   title: `${ownerRepo} - The Spy Project`,
-   description: fullDescription.slice(0, 160),
-   images: [
-    repository.images &&
-    repository.images.length > 0 &&
-    repository.images[0].url
-     ? repository.images[0].url
-     : "/banner.webp",
-   ],
-   creator: "@thespyproject",
-   site: "@thespyproject",
-  },
-  robots: {
-   index: true,
-   follow: true,
-   googleBot: {
-    index: true,
-    follow: true,
-    "max-video-preview": -1,
-    "max-image-preview": "large",
-    "max-snippet": -1,
-   },
-  },
- };
-}
-
-async function getRepository(slug: string): Promise<{
- repository: Repository | null;
- relatedRepos: Repository[];
-}> {
- try {
-  let repository: Repository | null = null;
-
-  // First try GitHub format: owner/repo
-  const { data: repos, error: repoError } = await supabase
-   .from("repositories")
-   .select("*")
-   .eq("repository", slug)
-   .single();
-
-  if (!repoError) {
-   repository = repos;
-  }
-
-  if (!repository) {
-   return { repository: null, relatedRepos: [] };
-  }
-
-  // Fetch related repositories based on language
-  let relatedRepos: Repository[] = [];
-  if (repository.languages) {
-   const { data: related, error: relatedError } = await supabase
+   // First try GitHub format: owner/repo
+   const { data: repos, error: repoError } = await supabase
     .from("repositories")
     .select("*")
-    .neq("id", repository.id)
-    .eq("publish", true)
-    .eq("languages", repository.languages)
-    .order("created_at", { ascending: false })
-    .limit(6);
+    .eq("repository", slug)
+    .single();
 
-   if (!relatedError) {
-    relatedRepos = related || [];
+   if (!repoError) {
+    repository = repos;
    }
-  }
 
-  return { repository, relatedRepos };
- } catch (err) {
-  console.error("Error fetching repository:", err);
-  return { repository: null, relatedRepos: [] };
+   if (!repository) {
+    return { repository: null, relatedRepos: [] };
+   }
+
+   // Fetch related repositories based on language - optimized with limit and better ordering
+   let relatedRepos: Repository[] = [];
+   if (repository.languages) {
+    const { data: related, error: relatedError } = await supabase
+     .from("repositories")
+     .select("*")
+     .neq("id", repository.id)
+     .eq("publish", true)
+     .eq("languages", repository.languages)
+     .order("stars", { ascending: false }) // Order by stars for better relevance
+     .limit(4); // Reduced limit for better performance
+
+    if (!relatedError) {
+     relatedRepos = related || [];
+    }
+   }
+
+   return { repository, relatedRepos };
+  } catch (err) {
+   console.error("Error fetching repository:", err);
+   return { repository: null, relatedRepos: [] };
+  }
+ },
+ ["repository"],
+ {
+  revalidate: 3600, // Cache for 1 hour
+  tags: ["repository"],
  }
-}
+);
 
 const formatNumber = (num: number) => {
  if (num >= 1000000) {
@@ -360,7 +261,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
    />
    <div className="w-full max-w-6xl mx-auto border-x">
-    <div className="flex flex-wrap gap-2 items-center justify-between px-6 py-2 sticky top-[93px] z-50 bg-background border-b">
+    <div className="flex flex-wrap gap-2 items-center justify-between px-6 py-2 sticky top-[83px] z-50 bg-background border-b">
      <Link
       href="/"
       className="hidden md:inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
