@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { JSDOM } from 'jsdom';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/db';
+import { repositoriesTable } from '@/db/schema';
+import { inArray } from 'drizzle-orm';
 
 interface ScrapedRepository {
 	href: string;
@@ -54,13 +56,13 @@ export async function GET() {
 		});
 
 		// Check which repositories already exist in the database
-		const existingRepos = await supabase
-			.from('repositories')
-			.select('repository')
-			.in('repository', scrapedRepos.map(repo => repo.href));
+		const existingRepos = await db
+			.select({ repository: repositoriesTable.repository })
+			.from(repositoriesTable)
+			.where(inArray(repositoriesTable.repository, scrapedRepos.map(repo => repo.href)));
 
 		const existingHrefs = new Set(
-			existingRepos.data?.map(repo => repo.repository) || []
+			existingRepos.map(repo => repo.repository).filter(Boolean)
 		);
 
 		// Add database status to each repository

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { repositoriesTable } from '@/db/schema'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -26,33 +27,7 @@ export interface ImageItem {
 	height?: number
 }
 
-export interface Repository {
-	id: string
-	summary: string
-	content: string
-	languages: string
-	experience: string
-	usability: string
-	deployment: string
-	stars: number
-	forks: number
-	watching: number
-	license: string
-	homepage: string
-	repository: string
+// Use Drizzle schema type but make it compatible with existing code
+export type Repository = typeof repositoriesTable.$inferSelect & {
 	images: ImageItem[]
-	created_at: string
-	updated_at: string
-	archived: boolean
-	disabled: boolean
-	open_issues: number
-	default_branch: string
-	network_count: number
-	tags: string
-	// Paper-related fields
-	arxiv_url?: string
-	huggingface_url?: string
-	paper_authors?: string
-	paper_abstract?: string
-	paper_scraped_at?: string
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { JSDOM } from 'jsdom';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/db';
+import { repositoriesTable } from '@/db/schema';
+import { inArray } from 'drizzle-orm';
 
 interface ScrapedPaper {
 	href: string;
@@ -135,13 +137,13 @@ export async function GET() {
 		});
 
 		// Check which repositories already exist in the database
-		const existingPapers = await supabase
-			.from('repositories')
-			.select('huggingface_url')
-			.in('huggingface_url', scrapedPapers.map(paper => paper.url));
+		const existingPapers = await db
+			.select({ huggingface_url: repositoriesTable.huggingface_url })
+			.from(repositoriesTable)
+			.where(inArray(repositoriesTable.huggingface_url, scrapedPapers.map(paper => paper.url)));
 
 		const existingHrefs = new Set(
-			existingPapers.data?.map(paper => paper.huggingface_url) || []
+			existingPapers.map(paper => paper.huggingface_url).filter(Boolean)
 		);
 
 		// Add database status to each paper

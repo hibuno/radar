@@ -1,22 +1,24 @@
-import { supabase } from "@/lib/supabase";
+import { db } from "@/db";
+import { repositoriesTable } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export async function GET() {
 	const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://spy.hibuno.com';
 
 	try {
 		// Get all repositories for sitemap
-		const { data: repositories, error } = await supabase
-			.from("repositories")
-			.select("repository, updated_at, created_at")
-			.eq("publish", true)
-			.order("stars", { ascending: false })
+		const repositories = await db
+			.select({
+				repository: repositoriesTable.repository,
+				updated_at: repositoriesTable.updated_at,
+				created_at: repositoriesTable.created_at
+			})
+			.from(repositoriesTable)
+			.where(eq(repositoriesTable.publish, true))
+			.orderBy(desc(repositoriesTable.stars))
 			.limit(1000); // Limit to prevent sitemap from being too large
 
-		if (error) {
-			console.error("Error fetching repositories for sitemap:", error);
-		}
-
-		const repos = repositories || [];
+		const repos = repositories;
 
 		const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

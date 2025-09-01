@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/db';
+import { repositoriesTable } from '@/db/schema';
+import { eq, desc, asc, or, ilike, and } from 'drizzle-orm';
+
+export async function GET(request: NextRequest) {
+	try {
+		const { searchParams } = new URL(request.url);
+
+		const page = parseInt(searchParams.get('page') || '1');
+		const limit = parseInt(searchParams.get('limit') || '12');
+		const sortBy = searchParams.get('sortBy') || 'created_at';
+		const sortOrder = searchParams.get('sortOrder') || 'desc';
+		const search = searchParams.get('search');
+		const language = searchParams.get('language');
+		const experience = searchParams.get('experience');
+
+		const offset = (page - 1) * limit;
+
+		// Build where conditions
+		const conditions = [eq(repositoriesTable.publish, true)];
+
+		// Apply search filter
+		if (search) {
+			const searchTerm = `%${search}%`;
+			conditions.push(
+				or(
+					ilike(repositoriesTable.summary, searchTerm),
+					ilike(repositoriesTable.repository, searchTerm),
+					ilike(repositoriesTable.languages, searchTerm),
+					ilike(repositoriesTable.tags, searchTerm)
+				)!
+			);
+		}
+
+		// Apply language filter
+		if (language) {
+			conditions.push(
+				ilike(repositoriesTable.languages, `%${language}%`)
+			);
+		}
+
+		// Apply experience filter
+		if (experience) {
+			conditions.push(
+				ilike(repositoriesTable.experience, `%${experience}%`)
+			);
+		}
+
+		// Build the final where clause
+		const whereClause = conditions.length > 1
+			? and(...conditions)
+			: conditions[0];
+
+		// Build and execute query with sorting and pagination
+		let repositories;
+
+		if (sortBy === "created_at") {
+			repositories = sortOrder === "asc"
+				? await db.select().from(repositoriesTable).where(whereClause).orderBy(asc(repositoriesTable.created_at)).limit(limit).offset(offset)
+				: await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.created_at)).limit(limit).offset(offset);
+		} else if (sortBy === "stars") {
+			repositories = sortOrder === "asc"
+				? await db.select().from(repositoriesTable).where(whereClause).orderBy(asc(repositoriesTable.stars)).limit(limit).offset(offset)
+				: await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.stars)).limit(limit).offset(offset);
+		} else {
+			repositories = await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.created_at)).limit(limit).offset(offset);
+		}
+
+		return NextResponse.json({
+			success: true,
+			repositories,
+			page,
+			limit,
+			hasMore: repositories.length === limit
+		});
+
+	} catch (error) {
+		console.error('Error fetching repositories:', error);
+		return NextResponse.json({
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error occurred',
+		}, { status: 500 });
+	}
+}

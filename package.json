@@ -6,7 +6,11 @@
 		"dev": "next dev --turbopack",
 		"build": "next build --turbopack",
 		"start": "next start",
-		"lint": "eslint"
+		"lint": "eslint",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@databuddy/sdk": "^2.0.0",
@@ -24,6 +28,7 @@
 		"clsx": "^2.1.1",
 		"cmdk": "^1.1.1",
 		"dotenv": "^17.2.1",
+		"drizzle-orm": "^0.44.5",
 		"embla-carousel-react": "^8.6.0",
 		"image-size": "^2.0.2",
 		"jsdom": "^26.1.0",
@@ -32,6 +37,7 @@
 		"ogl": "^1.0.11",
 		"pg": "^8.16.3",
 		"playwright": "^1.55.0",
+		"postgres": "^3.4.7",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
 		"react-markdown": "^10.1.0",
@@ -46,6 +52,7 @@
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"drizzle-kit": "^0.31.4",
 		"eslint": "^9",
 		"eslint-config-next": "15.5.2",
 		"tailwindcss": "^4",

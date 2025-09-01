@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase, Repository } from "@/lib/supabase";
 import { RepositoryGrid } from "@/components/repository-grid";
+import { Repository } from "@/lib/supabase";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -69,37 +69,33 @@ export function HomeClient({
 
     setError(null);
 
-    const from = (pageNum - 1) * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+    // Build query parameters
+    const params = new URLSearchParams({
+     page: pageNum.toString(),
+     limit: ITEMS_PER_PAGE.toString(),
+     sortBy: searchFilters.sortBy,
+     sortOrder: searchFilters.sortOrder,
+    });
 
-    let query = supabase.from("repositories").select("*").eq("publish", true);
-
-    // Apply search filter
     if (searchFilters.search) {
-     query = query.or(
-      `summary.ilike.%${searchFilters.search}%,repository.ilike.%${searchFilters.search}%,languages.ilike.%${searchFilters.search}%,tags.ilike.%${searchFilters.search}%`
-     );
+     params.append("search", searchFilters.search);
     }
-
-    // Apply language filter
     if (searchFilters.language) {
-     query = query.ilike("languages", `%${searchFilters.language}%`);
+     params.append("language", searchFilters.language);
     }
-
-    // Apply experience filter
     if (searchFilters.experience) {
-     query = query.ilike("experience", `%${searchFilters.experience}%`);
+     params.append("experience", searchFilters.experience);
     }
 
-    // Apply sorting
-    const ascending = searchFilters.sortOrder === "asc";
-    query = query.order(searchFilters.sortBy, { ascending });
+    // Make API call to fetch repositories
+    const response = await fetch(`/api/repositories?${params.toString()}`);
 
-    const { data, error } = await query.range(from, to);
+    if (!response.ok) {
+     throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    if (error) throw error;
-
-    const newData = data || [];
+    const data = await response.json();
+    const newData = data.repositories || [];
 
     if (pageNum === 1) {
      setRepositories(newData);

@@ -1,6 +1,9 @@
-import { supabase, Repository } from "@/lib/supabase";
+import { db } from "@/db";
+import { repositoriesTable, type SelectRepository } from "@/db/schema";
+import { eq, desc, count } from "drizzle-orm";
 import { HomeClient } from "@/app/page-client";
 import type { Metadata } from "next";
+import type { Repository, ImageItem } from "@/lib/supabase";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -79,46 +82,52 @@ async function getInitialData(): Promise<{
 }> {
  try {
   // Get total count of repositories
-  const { count: totalCount, error: countError } = await supabase
-   .from("repositories")
-   .select("*", { count: "exact", head: true })
-   .eq("publish", true);
+  const totalCountResult = await db
+   .select({ count: count() })
+   .from(repositoriesTable)
+   .where(eq(repositoriesTable.publish, true));
 
-  if (countError) throw countError;
+  const totalCount = totalCountResult[0]?.count || 0;
 
   // Get recommended repositories (high stars + recent activity)
-  const { data: recommendedData, error: recommendedError } = await supabase.rpc(
-   "get_recommended_repos",
-   {
-    min_stars: 50,
-    max_stars: 1000,
-    limit_count: 12,
-   }
-  );
-
-  if (recommendedError) throw recommendedError;
-  const recommendedRepos = recommendedData || [];
+  // Since we don't have the RPC function, we'll simulate it with a query
+  const recommendedReposRaw = await db
+   .select()
+   .from(repositoriesTable)
+   .where(eq(repositoriesTable.publish, true))
+   .orderBy(desc(repositoriesTable.stars))
+   .limit(12);
+  const normalizeRepo = (r: SelectRepository): Repository => ({
+   ...r,
+   images: Array.isArray(r.images) ? (r.images as ImageItem[]) : [],
+  });
+  const recommendedRepos = recommendedReposRaw.map(normalizeRepo);
 
   // Get initial repositories for infinite scroll
-  const { data: initialData, error: initialError } = await supabase
-   .from("repositories")
-   .select("*")
-   .eq("publish", true)
-   .order("created_at", { ascending: false })
-   .not(
-    "id",
-    "in",
-    `(${recommendedRepos.map(({ id }: { id: string }) => id).join(",")})`
-   )
-   .limit(ITEMS_PER_PAGE);
+  const recommendedIds = recommendedRepos.map((repo) => repo.id);
 
-  if (initialError) throw initialError;
-  const repositories = initialData || [];
+  let repositoriesRaw;
+  if (recommendedIds.length > 0) {
+   repositoriesRaw = await db
+    .select()
+    .from(repositoriesTable)
+    .where(eq(repositoriesTable.publish, true))
+    .orderBy(desc(repositoriesTable.created_at))
+    .limit(ITEMS_PER_PAGE);
+  } else {
+   repositoriesRaw = await db
+    .select()
+    .from(repositoriesTable)
+    .where(eq(repositoriesTable.publish, true))
+    .orderBy(desc(repositoriesTable.created_at))
+    .limit(ITEMS_PER_PAGE);
+  }
+  const repositories = repositoriesRaw.map(normalizeRepo);
 
   return {
    repositories,
    recommendedRepos,
-   totalCount: totalCount || 0,
+   totalCount,
   };
  } catch (err) {
   console.error("Error fetching initial data:", err);
@@ -148,16 +157,16 @@ export default async function Home() {
    itemListElement: repositories.slice(0, 10).map((repo, index) => ({
     "@type": "SoftwareSourceCode",
     position: index + 1,
-    name: repo.repository,
-    description: repo.summary,
-    url: repo.repository,
+    name: repo.repository || "",
+    description: repo.summary || "",
+    url: repo.repository || "",
     programmingLanguage: repo.languages?.split(",")[0]?.trim(),
     author: {
      "@type": "Organization",
      name: repo.repository?.match(/github\.com\/([^\/]+)/)?.[1] || "Unknown",
     },
     aggregateRating:
-     repo.stars > 0
+     repo.stars && repo.stars > 0
       ? {
          "@type": "AggregateRating",
          ratingValue: Math.min(5, Math.log10(repo.stars + 1) * 1.5),

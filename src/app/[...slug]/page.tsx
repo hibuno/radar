@@ -1,4 +1,7 @@
-import { supabase, Repository } from "@/lib/supabase";
+import { db } from "@/db";
+import { repositoriesTable } from "@/db/schema";
+import { eq, ne, desc, and } from "drizzle-orm";
+import { Repository } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RepositoryGrid } from "@/components/repository-grid";
@@ -55,14 +58,14 @@ const getRepository = unstable_cache(
    let repository: Repository | null = null;
 
    // First try GitHub format: owner/repo
-   const { data: repos, error: repoError } = await supabase
-    .from("repositories")
-    .select("*")
-    .eq("repository", slug)
-    .single();
+   const repos = await db
+    .select()
+    .from(repositoriesTable)
+    .where(eq(repositoriesTable.repository, slug))
+    .limit(1);
 
-   if (!repoError) {
-    repository = repos;
+   if (repos.length > 0) {
+    repository = repos[0] as Repository;
    }
 
    if (!repository) {
@@ -72,18 +75,20 @@ const getRepository = unstable_cache(
    // Fetch related repositories based on language - optimized with limit and better ordering
    let relatedRepos: Repository[] = [];
    if (repository.languages) {
-    const { data: related, error: relatedError } = await supabase
-     .from("repositories")
-     .select("*")
-     .neq("id", repository.id)
-     .eq("publish", true)
-     .eq("languages", repository.languages)
-     .order("stars", { ascending: false }) // Order by stars for better relevance
-     .limit(4); // Reduced limit for better performance
+    const related = await db
+     .select()
+     .from(repositoriesTable)
+     .where(
+      and(
+       ne(repositoriesTable.id, repository.id),
+       eq(repositoriesTable.publish, true),
+       eq(repositoriesTable.languages, repository.languages)
+      )
+     )
+     .orderBy(desc(repositoriesTable.stars))
+     .limit(4);
 
-    if (!relatedError) {
-     relatedRepos = related || [];
-    }
+    relatedRepos = related as Repository[];
    }
 
    if (relatedRepos.length > 3 && relatedRepos.length < 6) {
@@ -103,18 +108,20 @@ const getRepository = unstable_cache(
  }
 );
 
-const formatNumber = (num: number) => {
- if (num >= 1000000) {
-  return `${(num / 1000000).toFixed(1)}M`;
+const formatNumber = (num?: number | null) => {
+ const n = num ?? 0;
+ if (n >= 1000000) {
+  return `${(n / 1000000).toFixed(1)}M`;
  }
- if (num >= 1000) {
-  return `${(num / 1000).toFixed(1)}k`;
+ if (n >= 1000) {
+  return `${(n / 1000).toFixed(1)}k`;
  }
- return (num || 0).toString();
+ return n.toString();
 };
 
-const formatDate = (date: string) => {
- return new Date(date).toLocaleDateString("en-US", {
+const formatDate = (date: string | Date) => {
+ const d = typeof date === "string" ? new Date(date) : date;
+ return d.toLocaleDateString("en-US", {
   year: "numeric",
   month: "long",
   day: "numeric",
@@ -163,11 +170,14 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
  // Extract owner/repo from repository URL for display
  const getOwnerRepo = () => {
-  return repository.repository.split("/")[1];
+  const path = repository.repository ?? slug;
+  const parts = path.split("/");
+  // Prefer the repo segment (2nd), fallback to last, then full path
+  return parts[1] ?? parts[parts.length - 1] ?? path;
  };
 
- const isPopular = repository.stars > 1000;
- const isTrending = repository.stars > 5000;
+ const isPopular = (repository.stars ?? 0) > 1000;
+ const isTrending = (repository.stars ?? 0) > 5000;
 
  const jsonLd = {
   "@context": "https://schema.org",
@@ -197,11 +207,11 @@ export default async function RepositoryDetail({ params }: PageProps) {
    .map((tag) => tag.trim())
    .join(", "),
   aggregateRating:
-   repository.stars > 0
+   (repository.stars ?? 0) > 0
     ? {
        "@type": "AggregateRating",
-       ratingValue: Math.min(5, Math.log10(repository.stars + 1) * 1.5),
-       ratingCount: repository.stars,
+       ratingValue: Math.min(5, Math.log10((repository.stars ?? 0) + 1) * 1.5),
+       ratingCount: repository.stars ?? 0,
        bestRating: 5,
        worstRating: 1,
       }
@@ -210,17 +220,17 @@ export default async function RepositoryDetail({ params }: PageProps) {
    {
     "@type": "InteractionCounter",
     interactionType: "https://schema.org/LikeAction",
-    userInteractionCount: repository.stars,
+    userInteractionCount: repository.stars ?? 0,
    },
    {
     "@type": "InteractionCounter",
     interactionType: "https://schema.org/ShareAction",
-    userInteractionCount: repository.forks,
+    userInteractionCount: repository.forks ?? 0,
    },
    {
     "@type": "InteractionCounter",
     interactionType: "https://schema.org/FollowAction",
-    userInteractionCount: repository.watching,
+    userInteractionCount: repository.watching ?? 0,
    },
   ],
  };
@@ -649,14 +659,14 @@ export default async function RepositoryDetail({ params }: PageProps) {
            {formatNumber(repository.open_issues)}
           </span>
          </div>
-         {repository.network_count > 0 && (
+         {(repository.network_count ?? 0) > 0 && (
           <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
            <div className="flex items-center gap-1.5">
             <Network className="w-3.5 h-3.5 text-purple-500" />
             <span className="text-xs font-medium text-foreground">Network</span>
            </div>
            <span className="text-sm font-serif font-bold text-foreground">
-            {formatNumber(repository.network_count)}
+            {formatNumber(repository.network_count ?? 0)}
            </span>
           </div>
          )}
