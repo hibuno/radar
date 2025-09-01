@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { repositoriesTable } from '@/db/schema';
-import { eq, desc, asc, or, ilike, and } from 'drizzle-orm';
+import { repositoriesTable, type SelectRepository } from '@/db/schema';
+import { eq, desc, asc, or, ilike, and, notInArray } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
 	try {
@@ -17,8 +18,24 @@ export async function GET(request: NextRequest) {
 
 		const offset = (page - 1) * limit;
 
+		// Get recommended repositories to exclude from main list
+		const { data: recommendedData } = await supabase.rpc(
+			"get_recommended_repos",
+			{
+				min_stars: 50,
+				max_stars: 1000,
+				limit_count: 12,
+			}
+		);
+		const recommendedIds = recommendedData ? recommendedData.map((repo: SelectRepository) => repo.id) : [];
+
 		// Build where conditions
 		const conditions = [eq(repositoriesTable.publish, true)];
+
+		// Exclude recommended repositories to avoid duplicates
+		if (recommendedIds.length > 0) {
+			conditions.push(notInArray(repositoriesTable.id, recommendedIds));
+		}
 
 		// Apply search filter
 		if (search) {

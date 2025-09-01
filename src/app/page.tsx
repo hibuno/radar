@@ -1,9 +1,9 @@
 import { db } from "@/db";
 import { repositoriesTable, type SelectRepository } from "@/db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, and, notInArray } from "drizzle-orm";
 import { HomeClient } from "@/app/page-client";
 import type { Metadata } from "next";
-import type { Repository, ImageItem } from "@/lib/supabase";
+import { type Repository, type ImageItem, supabase } from "@/lib/supabase";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -91,27 +91,34 @@ async function getInitialData(): Promise<{
 
   // Get recommended repositories (high stars + recent activity)
   // Since we don't have the RPC function, we'll simulate it with a query
-  const recommendedReposRaw = await db
-   .select()
-   .from(repositoriesTable)
-   .where(eq(repositoriesTable.publish, true))
-   .orderBy(desc(repositoriesTable.stars))
-   .limit(12);
+  const { data: recommendedData } = await supabase.rpc(
+   "get_recommended_repos",
+   {
+    min_stars: 50,
+    max_stars: 1000,
+    limit_count: 12,
+   }
+  );
   const normalizeRepo = (r: SelectRepository): Repository => ({
    ...r,
    images: Array.isArray(r.images) ? (r.images as ImageItem[]) : [],
   });
-  const recommendedRepos = recommendedReposRaw.map(normalizeRepo);
+  const recommendedRepos = recommendedData.map(normalizeRepo);
 
   // Get initial repositories for infinite scroll
-  const recommendedIds = recommendedRepos.map((repo) => repo.id);
+  const recommendedIds = recommendedRepos.map((repo: Repository) => repo.id);
 
   let repositoriesRaw;
   if (recommendedIds.length > 0) {
    repositoriesRaw = await db
     .select()
     .from(repositoriesTable)
-    .where(eq(repositoriesTable.publish, true))
+    .where(
+     and(
+      eq(repositoriesTable.publish, true),
+      notInArray(repositoriesTable.id, recommendedIds)
+     )
+    )
     .orderBy(desc(repositoriesTable.created_at))
     .limit(ITEMS_PER_PAGE);
   } else {
