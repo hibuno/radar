@@ -2,11 +2,12 @@
 
 import { ImageItem, Repository } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
-import { Star, GitFork, Image as ImageIcon } from "lucide-react";
+import { Star, GitFork, Image as ImageIcon, Bookmark } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { bookmarkStore, useBookmarks } from "@/lib/bookmarks-store";
 
 interface RepositoryCardProps {
  repository: Repository;
@@ -27,6 +28,19 @@ function formatDate(date: string | Date | null | undefined): string {
 export function RepositoryCard({ repository, className }: RepositoryCardProps) {
  const [currentImageIndex, setCurrentImageIndex] = useState(0);
  const [imageError, setImageError] = useState(false);
+ const bookmarksSnapshot = useBookmarks();
+ const isBookmarked = bookmarksSnapshot.isBookmarked(repository.id);
+
+ const handleBookmark = (e: React.MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (isBookmarked) {
+   bookmarkStore.removeBookmark(repository.id);
+  } else {
+   bookmarkStore.addBookmark(repository);
+  }
+ };
 
  const languages =
   repository.languages
@@ -124,6 +138,17 @@ export function RepositoryCard({ repository, className }: RepositoryCardProps) {
        <ImageIcon className="w-8 h-8" />
       </div>
      )}
+     <button
+      onClick={handleBookmark}
+      className="absolute top-2 right-2 p-2 bg-background/50 backdrop-blur-sm rounded-full hover:bg-background/75 transition-colors"
+     >
+      <Bookmark
+       className={cn(
+        "w-5 h-5",
+        isBookmarked ? "text-yellow-400 fill-yellow-400" : "text-white"
+       )}
+      />
+     </button>
     </div>
 
     {/* Content */}

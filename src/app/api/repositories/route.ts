@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 		const search = searchParams.get('search');
 		const language = searchParams.get('language');
 		const experience = searchParams.get('experience');
+		const license = searchParams.get('license');
 
 		const offset = (page - 1) * limit;
 
@@ -64,6 +65,12 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
+		if (license) {
+			conditions.push(
+				ilike(repositoriesTable.license, `%${license}%`)
+			);
+		}
+
 		// Build the final where clause
 		const whereClause = conditions.length > 1
 			? and(...conditions)
@@ -80,6 +87,14 @@ export async function GET(request: NextRequest) {
 			repositories = sortOrder === "asc"
 				? await db.select().from(repositoriesTable).where(whereClause).orderBy(asc(repositoriesTable.stars)).limit(limit).offset(offset)
 				: await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.stars)).limit(limit).offset(offset);
+		} else if (sortBy === "forks") {
+			repositories = sortOrder === "asc"
+				? await db.select().from(repositoriesTable).where(whereClause).orderBy(asc(repositoriesTable.forks)).limit(limit).offset(offset)
+				: await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.forks)).limit(limit).offset(offset);
+		} else if (sortBy === "updated_at") {
+			repositories = sortOrder === "asc"
+				? await db.select().from(repositoriesTable).where(whereClause).orderBy(asc(repositoriesTable.updated_at)).limit(limit).offset(offset)
+				: await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.updated_at)).limit(limit).offset(offset);
 		} else {
 			repositories = await db.select().from(repositoriesTable).where(whereClause).orderBy(desc(repositoriesTable.created_at)).limit(limit).offset(offset);
 		}

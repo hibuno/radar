@@ -5,7 +5,7 @@ import { RepositoryGrid } from "@/components/repository-grid";
 import { Repository } from "@/lib/supabase";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, BookOpen, Bookmark, Code } from "lucide-react";
 import Lightning from "@/components/lightning";
 import { RepositoryColumns } from "@/components/repository-columns";
 import {
@@ -13,6 +13,8 @@ import {
  type SearchFilters as SearchFiltersType,
 } from "@/components/search-filters";
 import Galaxy from "@/components/galaxy";
+import { StatsDisplay } from "@/components/stats-display";
+import LightRays from "@/components/light-rays";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -43,6 +45,7 @@ export function HomeClient({
   search: "",
   language: "",
   experience: "",
+  license: "",
   sortBy: "created_at",
   sortOrder: "desc",
  });
@@ -85,6 +88,9 @@ export function HomeClient({
     }
     if (searchFilters.experience) {
      params.append("experience", searchFilters.experience);
+    }
+    if (searchFilters.license) {
+     params.append("license", searchFilters.license);
     }
 
     // Make API call to fetch repositories
@@ -164,6 +170,70 @@ export function HomeClient({
 
  return (
   <div>
+   {/* Hero Section */}
+   <div className="relative bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
+    <div className="absolute inset-0">
+     <LightRays
+      raysOrigin="top-center"
+      raysColor="#00ffff"
+      raysSpeed={1.5}
+      lightSpread={0.8}
+      rayLength={1.2}
+      followMouse={true}
+      mouseInfluence={0.1}
+      noiseAmount={0.1}
+      distortion={0.05}
+      className="custom-rays"
+     />
+    </div>
+    <div className="relative z-10 px-6 py-16 md:py-24 text-center">
+     <h1 className="text-2xl md:text-4xl font-serif font-bold text-white mb-6">
+      Discover the Future of{" "}
+      <span className="text-violet-400">Open Source</span>
+     </h1>
+     <p className="text-md md:text-lg text-gray-300 mb-8 max-w-3xl mx-auto">
+      Explore trending GitHub repositories, rising star projects, and
+      cutting-edge research papers. Stay ahead with the latest innovations in
+      AI, machine learning, and developer tools.
+     </p>
+     <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+      <div className="text-center">
+       <div className="w-12 h-12 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Code className="w-6 h-6 text-violet-400" />
+       </div>
+       <h3 className="text-lg font-semibold text-white mb-2">
+        Curated Repositories
+       </h3>
+       <p className="text-gray-400">
+        Hand-picked trending projects from GitHub&apos;s most active developers
+       </p>
+      </div>
+      <div className="text-center">
+       <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <BookOpen className="w-6 h-6 text-green-400" />
+       </div>
+       <h3 className="text-lg font-semibold text-white mb-2">
+        Research Papers
+       </h3>
+       <p className="text-gray-400">
+        Latest breakthroughs in AI, ML, and computer science from arXiv
+       </p>
+      </div>
+      <div className="text-center">
+       <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Bookmark className="w-6 h-6 text-purple-400" />
+       </div>
+       <h3 className="text-lg font-semibold text-white mb-2">
+        Personal Bookmarks
+       </h3>
+       <p className="text-gray-400">
+        Save and organize your favorite repositories and papers
+       </p>
+      </div>
+     </div>
+    </div>
+   </div>
+   <StatsDisplay />
    {/* Rising Stars Section */}
    {recommendedRepos.length > 0 && (
     <>

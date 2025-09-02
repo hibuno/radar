@@ -15,6 +15,8 @@ The primary goal is to create a centralized platform for developers, researchers
 - **Advanced Filtering:** Users can filter projects by language, experience level, and other criteria.
 - **"Rising Stars" Section:** A curated list of promising new projects.
 - **PWA Enabled:** The application is a Progressive Web App, allowing for a native-like experience and offline access.
+- **User Authentication:** Secure login and registration using Supabase Auth, with support for email/password and social providers like GitHub. Includes a user profile page.
+- **Bookmarking:** Logged-in users can bookmark their favorite repositories for easy access later from their profile.
 - **Responsive Design:** The UI is fully responsive and works on all screen sizes.
 
 ## 3. System Architecture
@@ -113,6 +115,17 @@ This is the main table that stores all the information about the repositories.
 | `paper_scraped_at` | `timestamp` | The timestamp when the paper information was last scraped.                    |
 | `readme`           | `text`      | The content of the README file.                                               |
 | `publish`          | `boolean`   | Whether the repository should be visible in the app.                          |
+
+### `bookmarks` Table Schema
+
+This table stores the bookmarks that users have created.
+
+| Column          | Type        | Description                                          |
+| --------------- | ----------- | ---------------------------------------------------- |
+| `id`            | `uuid`      | Primary key for the table.                           |
+| `user_id`       | `uuid`      | Foreign key to the `auth.users` table.               |
+| `repository_id` | `uuid`      | Foreign key to the `repositories` table.             |
+| `created_at`    | `timestamp` | The timestamp when the bookmark was created.         |
 
 ### Migrations
 

@@ -41,3 +41,13 @@ export const repositoriesTable = pgTable('repositories', {
 
 export type InsertRepository = typeof repositoriesTable.$inferInsert;
 export type SelectRepository = typeof repositoriesTable.$inferSelect;
+
+export const bookmarksTable = pgTable('bookmarks', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	user_id: uuid('user_id').notNull(),
+	repository_id: uuid('repository_id').notNull(),
+	created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type InsertBookmark = typeof bookmarksTable.$inferInsert;
+export type SelectBookmark = typeof bookmarksTable.$inferSelect;

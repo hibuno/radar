@@ -17,7 +17,8 @@ export interface SearchFilters {
  search: string;
  language: string;
  experience: string;
- sortBy: "stars" | "forks" | "created_at";
+ license: string;
+ sortBy: "stars" | "forks" | "created_at" | "updated_at";
  sortOrder: "desc" | "asc";
 }
 
@@ -53,10 +54,20 @@ const EXPERIENCE_LEVELS = [
  { value: "Expert", label: "Expert" },
 ];
 
+const LICENSE_OPTIONS = [
+ { value: "", label: "All Licenses" },
+ { value: "MIT", label: "MIT" },
+ { value: "GPL-3.0", label: "GPL-3.0" },
+ { value: "Apache-2.0", label: "Apache-2.0" },
+ { value: "BSD-3-Clause", label: "BSD-3-Clause" },
+ { value: "Unlicense", label: "Unlicense" },
+];
+
 const SORT_OPTIONS = [
  { value: "stars", label: "Stars", order: "desc" as const },
  { value: "forks", label: "Forks", order: "desc" as const },
- { value: "created_at", label: "Recently", order: "desc" as const },
+ { value: "created_at", label: "Recently Added", order: "desc" as const },
+ { value: "updated_at", label: "Recently Updated", order: "desc" as const },
 ];
 
 export function SearchFilters({
@@ -88,13 +99,14 @@ export function SearchFilters({
    search: "",
    language: "",
    experience: "",
+   license: "",
    sortBy: "created_at",
    sortOrder: "desc",
   });
  }, [onFiltersChange]);
 
  const hasActiveFilters =
-  filters.language || filters.experience || filters.search;
+  filters.language || filters.experience || filters.license || filters.search;
 
  return (
   <div
@@ -162,24 +174,44 @@ export function SearchFilters({
      </DropdownMenuContent>
     </DropdownMenu>
 
+    {/* License Filter */}
+    <DropdownMenu>
+     <DropdownMenuTrigger asChild>
+      <Button variant="outline" size="sm" className="h-8">
+       {filters.license || "License"}
+       <ChevronDown className="ml-2 h-3 w-3" />
+      </Button>
+     </DropdownMenuTrigger>
+     <DropdownMenuContent align="start" className="w-48">
+      {LICENSE_OPTIONS.map((option) => (
+       <DropdownMenuItem
+        key={option.value}
+        onClick={() => updateFilter("license", option.value)}
+       >
+        {option.label}
+       </DropdownMenuItem>
+      ))}
+     </DropdownMenuContent>
+    </DropdownMenu>
+
     {/* Sort Options */}
     <DropdownMenu>
      <DropdownMenuTrigger asChild>
       <Button variant="outline" size="sm" className="h-8">
        Sort by{" "}
        {SORT_OPTIONS.find((opt) => opt.value === filters.sortBy)?.label ||
-        "Recently"}
+        "Recently Added"}
        <ChevronDown className="ml-2 h-3 w-3" />
       </Button>
      </DropdownMenuTrigger>
-     <DropdownMenuContent align="start" className="w-40">
+     <DropdownMenuContent align="start" className="w-48">
       {SORT_OPTIONS.map((option) => (
        <DropdownMenuItem
         key={option.value}
         onClick={() => {
          onFiltersChange({
           ...filters,
-          sortBy: option.value as "stars" | "forks" | "created_at",
+          sortBy: option.value as "stars" | "forks" | "created_at" | "updated_at",
           sortOrder: option.order,
          });
         }}

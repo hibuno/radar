@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +14,7 @@ import Image from "next/image";
 
 export function Header() {
  return (
-  <div className="flex flex-wrap items-center gap-2 justify-center md:justify-between border-b px-6 py-4 sticky top-0 z-50 max-w-6xl mx-auto border-x bg-background">
+  <div className="flex flex-wrap items-center gap-2 justify-center md:justify-between border px-6 py-4 sticky top-0 z-50 max-w-6xl mx-auto bg-background">
    <div className="flex items-center gap-4">
     <Link href="/" className="flex items-center gap-1">
      <Image
@@ -44,6 +46,11 @@ export function Header() {
       height="54"
      />
     </a>
+    <Link href="/bookmarks">
+     <Button variant="outline" size="sm">
+      My Bookmarks
+     </Button>
+    </Link>
     <Dialog>
      <DialogTrigger asChild>
       <Button variant="outline" size="sm">
