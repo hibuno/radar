@@ -15,14 +15,14 @@ The automation system consists of:
 ## Workflow Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   External      │    │    Ingestion     │    │   Enrichment    │
-│   Sources       │───▶│    Endpoint      │───▶│    Endpoint     │
-│                 │    │                  │    │                 │
-│ • OSS Insight   │    │ • Fetch new      │    │ • AI summaries  │
-│ • GitHub        │    │   repositories   │    │ • Tags & levels │
-│ • Papers        │    │ • Add to DB      │    │ • Content gen   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   External      │    │    Ingestion     │    │   Enrichment    │    │   Cache         │
+│   Sources       │───▶│    Endpoint      │───▶│    Endpoint     │───▶│   Revalidation  │
+│                 │    │                  │    │                 │    │                 │
+│ • OSS Insight   │    │ • Fetch new      │    │ • AI summaries  │    │ • Clear SSG     │
+│ • GitHub        │    │   repositories   │    │ • Tags & levels │    │   cache         │
+│ • Papers        │    │ • Add to DB      │    │ • Content gen   │    │ • Fresh data    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## API Endpoints
@@ -79,6 +79,19 @@ Base URL: `https://yourdomain.com/api/automation/`
   3. Adds experience levels, tags, and usability ratings
   4. Handles repositories added by the ingest endpoint
 
+### 6. Cache Revalidation
+
+- **Endpoint**: `POST /api/revalidate`
+- **Purpose**: Clear Next.js SSG cache to show fresh data
+- **Headers**: `Content-Type: application/json`
+- **Body**: `{ "secret": "REVALIDATION_SECRET", "path": "/" }`
+- **Schedule**: Triggered by N8N after successful ingestion/enrichment
+- **Process**:
+  1. Validates secret token
+  2. Revalidates specified path (usually "/")
+  3. Forces Next.js to regenerate static pages
+  4. Ensures new repositories appear immediately
+
 ## Optimized Workflow
 
 ```
@@ -90,6 +103,8 @@ External Sources (unlimited)
          ↓
    Enrich (every 5min) → AI content
          ↓
+   Revalidate Cache → Fresh SSG pages
+         ↓
    Published repositories
 ```
 
@@ -99,6 +114,7 @@ External Sources (unlimited)
 - ✅ **Separation**: Ingest just adds to DB, processing happens separately
 - ✅ **Efficiency**: Enrich endpoint handles all new repos every 5 minutes
 - ✅ **Scalability**: Can handle large numbers of discovered repos without timeout
+- ✅ **Fresh data**: Cache revalidation ensures new data appears immediately
 
 ## n8n Workflow Configurations
 
@@ -464,12 +480,17 @@ External Sources (unlimited)
 
 ## Setup Instructions
 
-### 1. Create API Key Credential in n8n
+### 1. Create API Key Credentials in n8n
 
 1. Go to n8n credentials section
 2. Create a new credential of type "Generic Credential"
 3. Name it "Spy API Key"
 4. Add field: `apiKey` with your `API_SECRET_KEY` value
+
+5. Create another credential for revalidation:
+6. Create a new credential of type "Generic Credential"
+7. Name it "Revalidation Secret"
+8. Add field: `secret` with your `REVALIDATION_SECRET` value
 
 ### 2. Import Workflows
 
@@ -478,16 +499,18 @@ External Sources (unlimited)
 3. Click "Import from JSON"
 4. Paste the workflow JSON
 5. Update the domain URL in HTTP Request nodes
-6. Set the credential to "Spy API Key"
-7. Activate the workflow
+6. Set the API credential to "Spy API Key"
+7. Set the revalidation credential to "Revalidation Secret" (for workflows with revalidation)
+8. Activate the workflow
 
-### 3. Environment Variables
+### 4. Environment Variables
 
 Ensure these environment variables are set in your application:
 
 ```bash
 # Required for automation
 API_SECRET_KEY=your-secret-api-key-here
+REVALIDATION_SECRET=your-revalidation-secret-here
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 # Database connection
@@ -504,7 +527,7 @@ OPENAI_API_URL=https://api.upstage.ai/v1/chat/completions
 OPENAI_API_MODEL=solar-mini
 ```
 
-### 4. Testing
+### 5. Testing
 
 Test each endpoint manually first:
 
@@ -524,6 +547,46 @@ curl -X POST "https://yourdomain.com/api/automation/ingest" \
 # Test enrichment
 curl -X POST "https://yourdomain.com/api/automation/enrich" \
   -H "X-API-Key: your-api-key"
+
+# Test revalidation
+curl -X POST "https://yourdomain.com/api/revalidate" \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "your-revalidation-secret", "path": "/"}'
+```
+
+## Simplified Cache Management
+
+Instead of using Supabase webhooks, this setup uses N8N workflows to handle cache revalidation:
+
+**Advantages:**
+
+- ✅ **Centralized**: All automation logic in N8N
+- ✅ **Reliable**: Direct control over when revalidation happens
+- ✅ **Simple**: No need for webhook configuration in Supabase
+- ✅ **Flexible**: Easy to modify timing and conditions
+
+**Flow:**
+
+1. N8N triggers ingestion/enrichment
+2. On success, N8N immediately calls revalidation endpoint
+3. Cache is cleared and fresh data appears on the site
+
+## Manual Cache Management
+
+You can also trigger revalidation manually:
+
+```bash
+# Using the script
+bun run revalidate
+
+# Using the script with options
+bun run revalidate --verbose
+bun run revalidate --path /specific-page
+
+# Direct API call
+curl -X POST "https://yourdomain.com/api/revalidate" \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "your-secret", "path": "/"}'
 ```
 
 ## Monitoring and Troubleshooting
@@ -536,17 +599,23 @@ curl -X POST "https://yourdomain.com/api/automation/enrich" \
    - Check n8n credential configuration
    - Ensure `X-API-Key` header is included
 
-2. **Database Connection Failed**
+2. **Revalidation Failed**
+
+   - Verify `REVALIDATION_SECRET` is set in environment
+   - Check n8n revalidation credential configuration
+   - Ensure JSON body format is correct
+
+3. **Database Connection Failed**
 
    - Verify all `SUPABASE_DATABASE_*` variables are set
    - Test database connectivity
 
-3. **GitHub Rate Limit**
+4. **GitHub Rate Limit**
 
    - Ensure `GITHUB_TOKEN` is set for higher limits
    - Monitor GitHub API usage
 
-4. **OpenAI/Upstage API Errors**
+5. **OpenAI/Upstage API Errors**
    - Verify `OPENAI_API_KEY` is valid
    - Check API quota and billing
    - Monitor rate limits
