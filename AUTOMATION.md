@@ -6,10 +6,24 @@ This document provides step-by-step instructions for setting up n8n automation w
 
 The automation system consists of:
 
-1. **Repository Ingestion** - Runs every 1 hour to process new repositories
-2. **Repository Enrichment** - Runs every 5 minutes to enrich repositories with AI-generated content
-3. **Health Monitoring** - Endpoint for monitoring system health
-4. **Status Tracking** - Endpoint for tracking automation progress
+1. **Repository Ingestion** - Runs every 1 hour to fetch NEW repositories from external sources
+2. **Repository Processing** - Processes existing repositories that need image/metadata updates
+3. **Repository Enrichment** - Runs every 5 minutes to enrich repositories with AI-generated content
+4. **Health Monitoring** - Endpoint for monitoring system health
+5. **Status Tracking** - Endpoint for tracking automation progress
+
+## Workflow Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   External      │    │    Ingestion     │    │   Enrichment    │
+│   Sources       │───▶│    Endpoint      │───▶│    Endpoint     │
+│                 │    │                  │    │                 │
+│ • OSS Insight   │    │ • Fetch new      │    │ • AI summaries  │
+│ • GitHub        │    │   repositories   │    │ • Tags & levels │
+│ • Papers        │    │ • Add to DB      │    │ • Content gen   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
 
 ## API Endpoints
 
@@ -29,19 +43,36 @@ Base URL: `https://yourdomain.com/api/automation/`
 - **Purpose**: Get current automation statistics
 - **Headers**: `X-API-Key: your-api-key`
 
-### 3. Repository Ingestion
+### 3. Repository Ingestion (NEW)
 
 - **Endpoint**: `POST /api/automation/ingest`
-- **Purpose**: Process repositories that need ingestion
+- **Purpose**: Fetch NEW repositories from external sources (OSS Insight, Papers, Trending)
 - **Headers**: `X-API-Key: your-api-key`
 - **Schedule**: Every 1 hour
+- **Process**:
+  1. Calls `/api/ossinsight` to get trending repos
+  2. Calls `/api/paper` to get research paper repos
+  3. Calls `/api/trending` to get GitHub trending repos
+  4. Adds new repositories to database
+  5. Processes basic metadata (README, images)
 
-### 4. Repository Enrichment
+### 4. Repository Processing
+
+- **Endpoint**: `POST /api/automation/process`
+- **Purpose**: Process existing repositories that need image/metadata updates
+- **Headers**: `X-API-Key: your-api-key`
+- **Schedule**: As needed (can be triggered manually or scheduled)
+
+### 5. Repository Enrichment
 
 - **Endpoint**: `POST /api/automation/enrich`
 - **Purpose**: Enrich repositories with AI-generated content
 - **Headers**: `X-API-Key: your-api-key`
 - **Schedule**: Every 5 minutes
+- **Process**:
+  1. Finds repositories that are ingested but not enriched
+  2. Generates AI summaries and descriptions
+  3. Adds experience levels, tags, and usability ratings
 
 ## n8n Workflow Configurations
 

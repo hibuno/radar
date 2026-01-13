@@ -21,6 +21,19 @@ export function validateOrigin(
 ): boolean {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
+  const host = request.headers.get("host");
+
+  // Allow same-origin requests (when origin matches host)
+  if (origin && host) {
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.hostname === host) {
+        return true;
+      }
+    } catch {
+      // Continue with other checks
+    }
+  }
 
   // Allow requests without origin/referer for direct API access (like curl, Postman)
   // But in production, you might want to be more strict
@@ -36,7 +49,10 @@ export function validateOrigin(
         // Support both exact match and subdomain match
         return (
           originUrl.hostname === domain ||
-          originUrl.hostname.endsWith(`.${domain}`)
+          originUrl.hostname.endsWith(`.${domain}`) ||
+          // Allow any *.vercel.app domain for Vercel deployments
+          (originUrl.hostname.endsWith(".vercel.app") &&
+            allowedDomains.some((d) => d.endsWith(".vercel.app")))
         );
       });
     } catch {
@@ -51,7 +67,10 @@ export function validateOrigin(
       return allowedDomains.some((domain) => {
         return (
           refererUrl.hostname === domain ||
-          refererUrl.hostname.endsWith(`.${domain}`)
+          refererUrl.hostname.endsWith(`.${domain}`) ||
+          // Allow any *.vercel.app domain for Vercel deployments
+          (refererUrl.hostname.endsWith(".vercel.app") &&
+            allowedDomains.some((d) => d.endsWith(".vercel.app")))
         );
       });
     } catch {

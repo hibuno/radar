@@ -25,6 +25,18 @@ export function middleware(request: NextRequest) {
     allowedDomains.push("localhost", "127.0.0.1");
   }
 
+  // Add Vercel deployment domains automatically
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) {
+    allowedDomains.push(vercelUrl);
+  }
+
+  // Also allow any *.vercel.app domain for Vercel deployments
+  const currentHost = request.headers.get("host");
+  if (currentHost && currentHost.endsWith(".vercel.app")) {
+    allowedDomains.push(currentHost);
+  }
+
   // Log all API requests for monitoring
   const clientIP = getClientIP(request);
   const origin =
