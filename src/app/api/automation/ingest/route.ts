@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RepositoryFetcher } from "../../../../../scripts/ingest_repository";
 import { withApiMiddleware, middlewareConfigs } from "@/lib/api-middleware";
+import { fetchOSSInsightRepositories } from "@/services/ossinsight-service";
+import { fetchPaperRepositories } from "@/services/paper-service";
+import { fetchTrendingRepositories } from "@/services/trending-service";
 
 async function ingestHandler(_request: NextRequest) {
   try {
@@ -15,61 +18,47 @@ async function ingestHandler(_request: NextRequest) {
     let addedCount = 0;
     let errorCount = 0;
     const errors: string[] = [];
-    const sources = ["ossinsight", "paper", "trending"];
+    const sources = [
+      { name: "ossinsight", fetcher: fetchOSSInsightRepositories },
+      { name: "paper", fetcher: fetchPaperRepositories },
+      { name: "trending", fetcher: fetchTrendingRepositories },
+    ];
     const MAX_REPOS_PER_HOUR = 20;
 
     // Collect all new repositories from all sources first
     const allNewRepos: any[] = [];
 
-    // Fetch new repositories from all scraping endpoints
-    for (const source of sources) {
+    // Fetch new repositories from all scraping services directly
+    for (const { name: source, fetcher } of sources) {
       try {
         console.log(`📡 Fetching repositories from ${source}...`);
 
-        // Make internal API call to scraping endpoint
-        const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/api/${source}`,
-          {
-            headers: {
-              "X-API-Key": process.env.API_SECRET_KEY || "",
-              "User-Agent": "Spy-Automation/1.0",
-            },
-          }
-        );
+        // Call service directly instead of making HTTP request
+        const repositories = await fetcher();
 
-        if (!response.ok) {
-          throw new Error(`${source} API returned ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(
-            `${source} API failed: ${data.error || "Unknown error"}`
-          );
-        }
-
-        // Handle different response formats from different endpoints
+        // Handle different response formats from different services
         let newRepos = [];
         if (source === "paper") {
-          // Paper endpoint returns 'papers' array with different structure
-          newRepos = (data.papers || []).map((paper: any) => ({
-            href: paper.url, // Paper uses 'url' as the repository identifier
-            url: paper.url,
-            name: paper.url,
-            title: paper.title,
-            authors: paper.authors,
-            thumbnail: paper.thumbnail,
-            source: source,
-          }));
+          // Paper service returns papers with different structure
+          newRepos = repositories
+            .filter((paper: any) => !paper.existsInDB)
+            .map((paper: any) => ({
+              href: paper.url, // Paper uses 'url' as the repository identifier
+              url: paper.url,
+              name: paper.url,
+              title: paper.title,
+              authors: paper.authors,
+              thumbnail: paper.thumbnail,
+              source: source,
+            }));
         } else {
-          // OSS Insight and Trending endpoints return 'repositories' array
-          newRepos = (data.repositories || []).map((repo: any) => ({
-            ...repo,
-            source: source,
-          }));
+          // OSS Insight and Trending services return repositories array
+          newRepos = repositories
+            .filter((repo: any) => !repo.existsInDB)
+            .map((repo: any) => ({
+              ...repo,
+              source: source,
+            }));
         }
 
         console.log(
@@ -79,7 +68,7 @@ async function ingestHandler(_request: NextRequest) {
         allNewRepos.push(...newRepos);
 
         // Add delay between different sources
-        if (source !== sources[sources.length - 1]) {
+        if (source !== sources[sources.length - 1].name) {
           console.log(`⏳ Waiting before fetching from next source...`);
           await new Promise((resolve) => setTimeout(resolve, 2000));
         }
@@ -115,17 +104,17 @@ async function ingestHandler(_request: NextRequest) {
         const repoRecord = {
           id: crypto.randomUUID(),
           repository: repo.href || repo.name,
-          summary: repo.description || repo.title || "",
-          content: "",
-          languages: "",
-          experience: "",
-          usability: "",
-          deployment: "",
+          summary: repo.description || repo.title || null,
+          content: null,
+          languages: null,
+          experience: null,
+          usability: null,
+          deployment: null,
           stars: BigInt(parseInt(repo.stars) || 0),
           forks: BigInt(parseInt(repo.forks) || 0),
           watching: BigInt(0),
-          license: "",
-          homepage: repo.url || "",
+          license: null,
+          homepage: repo.url || null,
           images: JSON.stringify([]),
           created_at: new Date(),
           updated_at: new Date(),
@@ -134,13 +123,13 @@ async function ingestHandler(_request: NextRequest) {
           open_issues: BigInt(0),
           default_branch: "main",
           network_count: BigInt(0),
-          tags: "",
-          arxiv_url: "",
-          huggingface_url: "",
-          paper_authors: repo.authors ? JSON.stringify(repo.authors) : "",
-          paper_abstract: "",
+          tags: null,
+          arxiv_url: null,
+          huggingface_url: null, // Use null instead of empty string to avoid unique constraint violations
+          paper_authors: repo.authors ? JSON.stringify(repo.authors) : null,
+          paper_abstract: null,
           paper_scraped_at: null,
-          readme: "",
+          readme: null,
           publish: false,
           ingested: false, // Mark as not ingested so process endpoint can handle it
           enriched: false, // Mark as not enriched so enrich endpoint can handle it
@@ -160,7 +149,7 @@ async function ingestHandler(_request: NextRequest) {
           ) ON CONFLICT (repository) DO NOTHING
         `;
 
-        await (fetcher as any).dbClient.query(insertQuery, [
+        const result = await (fetcher as any).dbClient.query(insertQuery, [
           repoRecord.id,
           repoRecord.repository,
           repoRecord.summary,
@@ -194,7 +183,10 @@ async function ingestHandler(_request: NextRequest) {
           repoRecord.enriched,
         ]);
 
-        addedCount++;
+        // Only count as added if a row was actually inserted
+        if (result.rowCount && result.rowCount > 0) {
+          addedCount++;
+        }
 
         // Small delay between database inserts
         if (i < limitedRepos.length - 1) {
@@ -222,8 +214,8 @@ async function ingestHandler(_request: NextRequest) {
       maxPerHour: MAX_REPOS_PER_HOUR,
       errors: errorCount,
       errorDetails: errors.slice(0, 10), // Limit error details to first 10
-      sources: sources,
-      note: "Repositories added to database but not fully processed. Processing will be handled by separate endpoints.",
+      sources: sources.map((s) => s.name),
+      note: "Repositories added to database but not fully processed. Processing will be handled by separate endpoints. Using direct service calls instead of HTTP requests.",
       timestamp: new Date().toISOString(),
     };
 
