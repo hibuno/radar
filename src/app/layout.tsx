@@ -5,6 +5,7 @@ import { Databuddy } from "@databuddy/sdk/react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next";
 
 const urbanist = Urbanist({
   subsets: ["latin"],
@@ -145,18 +146,22 @@ export default function RootLayout({
         {children}
         {/* Footer Section */}
         <Footer />
-        {process.env.NODE_ENV === "production" &&
-          process.env.NEXT_PUBLIC_DATABUDDY_KEY && (
-            <Databuddy
-              clientId={process.env.NEXT_PUBLIC_DATABUDDY_KEY}
-              trackOutgoingLinks={true}
-              trackInteractions={true}
-              trackScrollDepth={true}
-              trackWebVitals={true}
-              trackErrors={true}
-              enableBatching={true}
-            />
-          )}
+        {process.env.NODE_ENV === "production" && (
+          <>
+            {process.env.NEXT_PUBLIC_DATABUDDY_KEY && (
+              <Databuddy
+                clientId={process.env.NEXT_PUBLIC_DATABUDDY_KEY}
+                trackOutgoingLinks={true}
+                trackInteractions={true}
+                trackScrollDepth={true}
+                trackWebVitals={true}
+                trackErrors={true}
+                enableBatching={true}
+              />
+            )}
+            {process.env.VERCEL && <Analytics />}
+          </>
+        )}
       </body>
     </html>
   );

@@ -24,6 +24,7 @@
 		"@supabase/supabase-js": "^2.90.1",
 		"@tailwindcss/typography": "^0.5.19",
 		"@types/pg": "^8.16.0",
+		"@vercel/analytics": "^1.6.1",
 		"cheerio": "^1.1.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
