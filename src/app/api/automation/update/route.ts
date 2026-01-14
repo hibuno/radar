@@ -24,11 +24,11 @@ async function updateHandler(_request: NextRequest) {
       .from(repositoriesTable)
       .where(
         and(
-          sql`${repositoriesTable.publish} = true`,
-          sql`${repositoriesTable.updated_at} < ${oneDayAgo}`
+          eq(repositoriesTable.publish, true),
+          lt(repositoriesTable.updated_at, oneDayAgo)
         )
       )
-      .orderBy(sql`${repositoriesTable.updated_at} ASC`)
+      .orderBy(repositoriesTable.updated_at)
       .limit(10); // Process max 10 at a time to avoid rate limits
 
     if (repositoriesToUpdate.length === 0) {
