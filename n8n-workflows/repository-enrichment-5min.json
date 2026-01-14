@@ -42,7 +42,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{$json.nextActions.shouldRunEnrichment}}",
+              "value1": "={{ $json.nextActions.shouldRunEnrichment }}",
               "value2": true
             }
           ]

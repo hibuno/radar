@@ -69,13 +69,27 @@
     },
     {
       "parameters": {
-        "message": "🚨 System health check failed!\n\n❌ Status: {{$('Health Check').item.json.status}}\n- Error: {{$('Health Check').item.json.error}}\n- Missing env vars: {{$('Health Check').item.json.environment.missingEnvVars}}\n- Timestamp: {{$('Health Check').item.json.timestamp}}\n\nPlease check the application logs and environment configuration."
+        "fromEmail": "no-reply@yourdomain.com",
+        "toEmail": "alert-receiver@yourdomain.com",
+        "subject": "SPY: Something Went Wrong",
+        "html": "We got unusual problem at yourdomain.com, please check the Vercel log for more detailed information.",
+        "options": {}
       },
-      "id": "5",
-      "name": "Alert Notification",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [900, 400]
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -544,
+        240
+      ],
+      "id": "7dad0c84-400e-4850-ac1e-afd2ab43bc55",
+      "name": "Send email",
+      "webhookId": "6373b649-1291-48c2-80fb-7c1492e403dd",
+      "credentials": {
+        "smtp": {
+          "id": "tYu12QNrjAzwTvzo",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "connections": {
@@ -112,7 +126,7 @@
         ],
         [
           {
-            "node": "Alert Notification",
+            "node": "Send email",
             "type": "main",
             "index": 0
           }
