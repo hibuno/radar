@@ -8,7 +8,7 @@ import { type Repository, type ImageItem, supabase } from "@/lib/supabase";
 const ITEMS_PER_PAGE = 12;
 
 export const metadata: Metadata = {
-  title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+  title: "The Radar Project - Discover Trending Repositories & Rising Stars",
   description:
     "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers. Stay updated with the latest open source innovations, AI projects, and developer tools from across the web.",
   keywords: [
@@ -26,19 +26,19 @@ export const metadata: Metadata = {
     "popular repositories",
     "coding projects",
   ],
-  authors: [{ name: "The Spy Project" }],
-  creator: "The Spy Project",
-  publisher: "The Spy Project",
-  metadataBase: new URL("https://spy.hibuno.com"),
+  authors: [{ name: "The Radar Project" }],
+  creator: "The Radar Project",
+  publisher: "The Radar Project",
+  metadataBase: new URL("https://radar.hibuno.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+    title: "The Radar Project - Discover Trending Repositories & Rising Stars",
     description:
       "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers. Stay updated with the latest open source innovations.",
     url: "/",
-    siteName: "The Spy Project",
+    siteName: "The Radar Project",
     locale: "en_US",
     type: "website",
     images: [
@@ -46,18 +46,18 @@ export const metadata: Metadata = {
         url: "/banner.webp",
         width: 1200,
         height: 630,
-        alt: "The Spy Project - Discover Trending Repositories & Rising Stars",
+        alt: "The Radar Project - Discover Trending Repositories & Rising Stars",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Spy Project - Discover Trending Repositories & Rising Stars",
+    title: "The Radar Project - Discover Trending Repositories & Rising Stars",
     description:
       "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
     images: ["/banner.webp"],
-    creator: "@thespyproject",
-    site: "@thespyproject",
+    creator: "@hibuno",
+    site: "@hibuno",
   },
   robots: {
     index: true,
@@ -152,10 +152,10 @@ export default async function Home() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: "The Spy Project - Trending Repositories",
+    name: "The Radar Project - Trending Repositories",
     description:
       "Explore trending GitHub repositories, rising star projects, and cutting-edge research papers.",
-    url: "https://spy.hibuno.com",
+    url: "https://radar.hibuno.com",
     mainEntity: {
       "@type": "ItemList",
       name: "Trending Repositories",
@@ -192,14 +192,14 @@ export default async function Home() {
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://spy.hibuno.com",
+          item: "https://radar.hibuno.com",
         },
       ],
     },
     publisher: {
       "@type": "Organization",
-      name: "The Spy Project",
-      url: "https://spy.hibuno.com",
+      name: "The Radar Project",
+      url: "https://radar.hibuno.com",
     },
   };
 

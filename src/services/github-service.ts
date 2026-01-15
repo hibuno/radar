@@ -61,7 +61,7 @@ export async function fetchGitHubRepository(
   try {
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
-      "User-Agent": "The-Spy-Project",
+      "User-Agent": "The-Radar-Project",
     };
 
     if (GITHUB_TOKEN) {
@@ -97,7 +97,7 @@ export async function fetchGitHubReadme(
   try {
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
-      "User-Agent": "The-Spy-Project",
+      "User-Agent": "The-Radar-Project",
     };
 
     if (GITHUB_TOKEN) {
@@ -141,7 +141,7 @@ export async function fetchGitHubLanguages(
   try {
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
-      "User-Agent": "The-Spy-Project",
+      "User-Agent": "The-Radar-Project",
     };
 
     if (GITHUB_TOKEN) {

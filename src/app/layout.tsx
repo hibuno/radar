@@ -19,7 +19,7 @@ const firaMono = Fira_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Spy Project - Discover Rising Stars & Popular Repositories",
+  title: "The Radar Project - Discover Rising Stars & Popular Repositories",
   description:
     "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms. Stay updated with the latest open source innovations, research papers, and developer tools.",
   keywords: [
@@ -43,16 +43,16 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://spy.hibuno.com"),
+  metadataBase: new URL("https://radar.hibuno.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "The Spy Project - Discover Rising Stars & Popular Repositories",
+    title: "The Radar Project - Discover Rising Stars & Popular Repositories",
     description:
       "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms. Stay updated with the latest open source innovations.",
     url: "/",
-    siteName: "The Spy Project",
+    siteName: "The Radar Project",
     locale: "en_US",
     type: "website",
     images: [
@@ -60,18 +60,18 @@ export const metadata: Metadata = {
         url: "/banner.webp",
         width: 1200,
         height: 630,
-        alt: "The Spy Project - Discover Rising Stars & Popular Repositories",
+        alt: "The Radar Project - Discover Rising Stars & Popular Repositories",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Spy Project - Discover Rising Stars & Popular Repositories",
+    title: "The Radar Project - Discover Rising Stars & Popular Repositories",
     description:
       "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms.",
     images: ["/banner.webp"],
-    creator: "@thespyproject",
-    site: "@thespyproject",
+    creator: "@hibuno",
+    site: "@hibuno",
   },
   robots: {
     index: true,
@@ -109,22 +109,22 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "The Spy Project",
+              name: "The Radar Project",
               description:
                 "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms.",
-              url: "https://spy.hibuno.com",
+              url: "https://radar.hibuno.com",
               potentialAction: {
                 "@type": "SearchAction",
                 target: {
                   "@type": "EntryPoint",
-                  urlTemplate: `${"https://spy.hibuno.com"}?q={search_term_string}`,
+                  urlTemplate: `${"https://radar.hibuno.com"}?q={search_term_string}`,
                 },
                 "query-input": "required name=search_term_string",
               },
               publisher: {
                 "@type": "Organization",
-                name: "The Spy Project",
-                url: "https://spy.hibuno.com",
+                name: "The Radar Project",
+                url: "https://radar.hibuno.com",
               },
             }),
           }}

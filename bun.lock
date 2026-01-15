@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "spy",
+      "name": "radar",
       "dependencies": {
         "@databuddy/sdk": "^2.3.24",
         "@playwright/test": "^1.57.0",

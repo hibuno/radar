@@ -35,8 +35,8 @@
       "position": [460, 300],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "spy-api-key",
-          "name": "Spy API Key"
+          "id": "radar-api-key",
+          "name": "Radar API Key"
         }
       }
     },
@@ -71,7 +71,7 @@
       "parameters": {
         "fromEmail": "no-reply@yourdomain.com",
         "toEmail": "alert-receiver@yourdomain.com",
-        "subject": "SPY: Something Went Wrong",
+        "subject": "RADAR: Something Went Wrong",
         "html": "We got unusual problem at yourdomain.com, please check the Vercel log for more detailed information.",
         "options": {}
       },

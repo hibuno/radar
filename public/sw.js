@@ -1,5 +1,5 @@
-// Service Worker for The Spy Project PWA
-const CACHE_NAME = 'spy-project-v1.0.0';
+// Service Worker for The Radar Project PWA
+const CACHE_NAME = 'radar-project-v1.0.0';
 const OFFLINE_URL = '/offline';
 
 // Assets to cache immediately
@@ -185,7 +185,7 @@ self.addEventListener('push', (event) => {
 		};
 
 		event.waitUntil(
-			self.registration.showNotification(data.title || 'The Spy Project', options)
+			self.registration.showNotification(data.title || 'The Radar Project', options)
 		);
 	}
 });

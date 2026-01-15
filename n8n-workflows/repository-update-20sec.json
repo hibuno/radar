@@ -44,8 +44,8 @@
       "position": [450, 300],
       "credentials": {
         "httpHeaderAuth": {
-          "id": "spy-api-key",
-          "name": "Spy API Key"
+          "id": "radar-api-key",
+          "name": "Radar API Key"
         }
       }
     },

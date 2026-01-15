@@ -1,10 +1,10 @@
-# The Spy Project
+# The Radar Project
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![Drizzle ORM](https://img.shields.io/badge/Drizzle%20ORM-C5F74F?style=for-the-badge) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white) ![n8n](https://img.shields.io/badge/n8n-1A82E2?style=for-the-badge&logo=n8n&logoColor=white)
 
 ## 1. Project Overview
 
-**The Spy Project** is a web application designed to help users discover, explore, and stay updated with trending and popular software repositories. It addresses the challenge of information overload by aggregating data from various platforms like GitHub, arXiv, and Hugging Face. The platform provides a comprehensive and curated overview of projects, including their source code, research papers, and AI models.
+**The Radar Project** is a web application designed to help users discover, explore, and stay updated with trending and popular software repositories. It addresses the challenge of information overload by aggregating data from various platforms like GitHub, arXiv, and Hugging Face. The platform provides a comprehensive and curated overview of projects, including their source code, research papers, and AI models.
 
 The primary goal is to create a centralized platform for developers, researchers, and tech enthusiasts to find "rising stars" and significant open-source projects, track their progress, and access related resources, all in one place.
 
@@ -252,7 +252,7 @@ The health monitoring system can send email notifications when issues are detect
 1. **Configure API Key**: Set `API_SECRET_KEY` in environment variables
 2. **Import Workflows**: Use the JSON files in `n8n-workflows/` directory
 3. **Update URLs**: Replace `https://yourdomain.com` with your actual domain
-4. **Set Credentials**: Create "Spy API Key" credential in n8n with your API key
+4. **Set Credentials**: Create "Radar API Key" credential in n8n with your API key
 5. **Activate Workflows**: Enable each workflow in n8n
 
 For detailed setup instructions, see [AUTOMATION.md](./AUTOMATION.md).

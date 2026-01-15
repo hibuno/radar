@@ -1,6 +1,6 @@
 {
-	"name": "The Spy Project - Trending Repositories",
-	"short_name": "Spy Project",
+	"name": "The Radar Project - Trending Repositories",
+	"short_name": "Radar Project",
 	"description": "Discover trending repositories and rising star projects from GitHub, GitLab, and other platforms",
 	"start_url": "/",
 	"display": "standalone",
