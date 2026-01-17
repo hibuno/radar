@@ -60,14 +60,14 @@ function cleanReadmeContent(content: string): string {
     const maxLength = 100000;
     if (cleaned.length > maxLength) {
       console.log(
-        `📏 Content too long (${cleaned.length} chars), truncating to ${maxLength} chars`
+        `📏 Content too long (${cleaned.length} chars), truncating to ${maxLength} chars`,
       );
       // Try to truncate at a sentence boundary
       let truncated = cleaned.substring(0, maxLength);
       const lastSentenceEnd = Math.max(
         truncated.lastIndexOf(". "),
         truncated.lastIndexOf("! "),
-        truncated.lastIndexOf("? ")
+        truncated.lastIndexOf("? "),
       );
 
       if (lastSentenceEnd > maxLength * 0.8) {
@@ -79,7 +79,7 @@ function cleanReadmeContent(content: string): string {
     }
 
     console.log(
-      `🧹 Cleaned README content: ${content.length} → ${cleaned.length} characters`
+      `🧹 Cleaned README content: ${content.length} → ${cleaned.length} characters`,
     );
     return cleaned;
   } catch (error) {
@@ -112,7 +112,7 @@ async function generateAIContent(repository: any): Promise<{
 
   try {
     if (!repository.readme) {
-      console.log(`⚠️  No README content for ${repository.repository}`);
+      console.log(`⚠️  No README content available`);
       return {
         enhancedSummary: "",
         enhancedContent: "",
@@ -126,9 +126,7 @@ async function generateAIContent(repository: any): Promise<{
     const cleanedReadme = cleanReadmeContent(repository.readme);
 
     if (!cleanedReadme || cleanedReadme.trim().length < 100) {
-      console.log(
-        `⚠️  README content too short or empty after cleaning for ${repository.repository}`
-      );
+      console.log(`⚠️  README content too short or empty after cleaning`);
       return {
         enhancedSummary: "",
         enhancedContent: "",
@@ -138,19 +136,25 @@ async function generateAIContent(repository: any): Promise<{
       };
     }
 
-    const prompt = `Based on the following GitHub repository README content in English, create a human-written article about this project. The article should be engaging, informative, and written in a natural, conversational style.
+    const prompt = `Based on the following GitHub repository README content in English, create a human-written article about this project. The article should be engaging, informative, and written in a natural, conversational style with proper markdown structure.
 
 README Content:
 ${cleanedReadme}
 
 Please generate:
-1. A brief summary/excerpt (2-3 sentences)
-2. The full article content in markdown format
+1. Summary: A brief, engaging summary/excerpt (2-3 sentences) that hooks the reader
+2. Content: A well-structured article in markdown format with:
+   - A compelling introduction paragraph that hooks the reader
+   - Clear section headers (## What Is [Project Name]?, ## Key Features, ## How It Works, etc.)
+   - Bullet points for features and benefits
+   - Proper markdown formatting with headers, lists, and emphasis
+   - Sections covering: what it is, key features, how it works, use cases, getting started
+   - Engaging, conversational tone throughout, without any information about experience level, usability level, and deployment difficulty
 3. Experience Level: beginner, intermediate, or advanced
 4. Usability Level: easy, intermediate, or difficult
 5. Deployment Difficulty: easy, intermediate, advanced, or expert
 
-Format your response exactly in proper JSON format based on provided response format. Make the article comprehensive but not too long. Focus on what makes this project interesting, its features, use cases, and value proposition.`;
+IMPORTANT: The content should be structured like a blog post with clear sections, NOT dense paragraphs. Use markdown headers (##, ###), bullet points (-), and proper formatting to make it scannable and engaging. Focus on what makes this project interesting, its features, use cases, and value proposition.`;
 
     const response = await fetch(OPENAI_API_URL, {
       method: "POST",
@@ -177,12 +181,12 @@ Format your response exactly in proper JSON format based on provided response fo
                 summary: {
                   type: "string",
                   description:
-                    "A concise 2-3 sentence summary of the repository",
+                    "A compelling, engaging 2-3 sentence summary that hooks the reader and highlights what makes this project interesting",
                 },
                 content: {
                   type: "string",
                   description:
-                    "A detailed 3-4 paragraph description of the repository",
+                    "A well-structured article in markdown format with clear sections, headers (##, ###), bullet points, and engaging content. Should include sections like 'What Is [Project]?', 'Key Features', 'How It Works', 'Use Cases', etc. NOT dense paragraphs.",
                 },
                 experience: {
                   type: "string",
@@ -243,7 +247,7 @@ Format your response exactly in proper JSON format based on provided response fo
       };
     }
 
-    console.log(`🤖 Generated content for ${repository.repository}`);
+    console.log(`🤖 Generated AI content successfully`);
     // Parse structured JSON response
     try {
       const parsed = JSON.parse(content);
@@ -288,7 +292,7 @@ async function enrichHandler(_request: NextRequest) {
       .select()
       .from(repositoriesTable)
       .where(
-        sql`${repositoriesTable.ingested} = true AND ${repositoriesTable.enriched} = false`
+        sql`${repositoriesTable.ingested} = true AND ${repositoriesTable.enriched} = false`,
       )
       .limit(10); // Process max 10 at a time
 
@@ -302,7 +306,7 @@ async function enrichHandler(_request: NextRequest) {
     }
 
     console.log(
-      `📋 Found ${repositoriesToEnrich.length} repositories to enrich`
+      `📋 Found ${repositoriesToEnrich.length} repositories to enrich`,
     );
 
     let processedCount = 0;
@@ -315,18 +319,14 @@ async function enrichHandler(_request: NextRequest) {
 
       try {
         console.log(
-          `📝 Enriching ${i + 1}/${repositoriesToEnrich.length}: ${
-            repository.repository
-          }`
+          `📝 Enriching ${i + 1}/${repositoriesToEnrich.length} repositories`,
         );
 
         // Parse repository path
         const parsed = parseRepositoryPath(repository.repository || "");
 
         if (!parsed) {
-          console.warn(
-            `Could not parse repository path: ${repository.repository}`
-          );
+          console.warn(`Could not parse repository path`);
           // Mark as enriched anyway to avoid reprocessing
           await db
             .update(repositoriesTable)
@@ -349,7 +349,7 @@ async function enrichHandler(_request: NextRequest) {
         ]);
 
         if (!githubRepo) {
-          console.warn(`GitHub repository not found: ${owner}/${repo}`);
+          console.warn(`GitHub repository not found`);
           // Mark as enriched to avoid reprocessing
           await db
             .update(repositoriesTable)
@@ -440,9 +440,7 @@ async function enrichHandler(_request: NextRequest) {
           .where(eq(repositoriesTable.id, repository.id));
 
         processedCount++;
-        console.log(
-          `✅ Enriched: ${repository.repository} (publish: ${shouldPublish})`
-        );
+        console.log(`✅ Repository enriched (publish: ${shouldPublish})`);
         if (experienceLevel) console.log(`   Experience: ${experienceLevel}`);
         if (usabilityLevel) console.log(`   Usability: ${usabilityLevel}`);
         if (deploymentLevel) console.log(`   Deployment: ${deploymentLevel}`);
@@ -453,11 +451,11 @@ async function enrichHandler(_request: NextRequest) {
         }
       } catch (error) {
         errorCount++;
-        const errorMessage = `${repository.repository}: ${
+        const errorMessage = `Repository enrichment error: ${
           error instanceof Error ? error.message : "Unknown error"
         }`;
         errors.push(errorMessage);
-        console.error(`❌ Error enriching ${repository.repository}:`, error);
+        console.error(`❌ Error enriching repository:`, error);
 
         // Continue with next repository
         continue;
@@ -488,7 +486,7 @@ async function enrichHandler(_request: NextRequest) {
           error instanceof Error ? error.message : "Unknown error occurred",
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -496,5 +494,5 @@ async function enrichHandler(_request: NextRequest) {
 // Apply security middleware - require API key for automation endpoints
 export const POST = withApiMiddleware(
   enrichHandler,
-  middlewareConfigs.scraping
+  middlewareConfigs.scraping,
 );

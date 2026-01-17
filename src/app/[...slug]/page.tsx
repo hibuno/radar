@@ -49,7 +49,7 @@ const Threads = dynamic(() => import("@/components/threads"), {
 
 const getRepository = unstable_cache(
   async (
-    slug: string
+    slug: string,
   ): Promise<{
     repository: Repository | null;
     relatedRepos: Repository[];
@@ -82,8 +82,8 @@ const getRepository = unstable_cache(
             and(
               ne(repositoriesTable.id, repository.id),
               eq(repositoriesTable.publish, true),
-              eq(repositoriesTable.languages, repository.languages)
-            )
+              eq(repositoriesTable.languages, repository.languages),
+            ),
           )
           .orderBy(desc(repositoriesTable.stars))
           .limit(4);
@@ -105,7 +105,7 @@ const getRepository = unstable_cache(
   {
     revalidate: 3600, // Cache for 1 hour
     tags: ["repository"],
-  }
+  },
 );
 
 const formatNumber = (num?: number | null) => {
@@ -212,7 +212,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
             "@type": "AggregateRating",
             ratingValue: Math.min(
               5,
-              Math.log10((repository.stars ?? 0) + 1) * 1.5
+              Math.log10((repository.stars ?? 0) + 1) * 1.5,
             ),
             ratingCount: repository.stars ?? 0,
             bestRating: 5,
@@ -247,7 +247,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
 
   const getLevelDescription = (map: Record<Level, string>, value?: string) => {
     const key = (value ?? "").toLowerCase();
-    return isLevel(key) ? map[key] : value ?? "";
+    return isLevel(key) ? map[key] : (value ?? "");
   };
 
   const experienceText: Record<Level, string> = {
@@ -410,20 +410,20 @@ export default async function RepositoryDetail({ params }: PageProps) {
                   {repository.experience && (
                     <Badge
                       className={`${getExperienceColor(
-                        repository.experience
+                        repository.experience,
                       )} border font-medium text-xs`}
                     >
                       <Award className="w-2.5 h-2.5 mr-1" />
                       {getLevelDescription(
                         experienceText,
-                        repository.experience
+                        repository.experience,
                       )}
                     </Badge>
                   )}
                   {repository.usability && (
                     <Badge
                       className={`${getDifficultyColor(
-                        repository.usability
+                        repository.usability,
                       )} border font-medium text-xs`}
                     >
                       <Gauge className="w-2.5 h-2.5 mr-1" />
@@ -433,13 +433,13 @@ export default async function RepositoryDetail({ params }: PageProps) {
                   {repository.deployment && (
                     <Badge
                       className={`${getDifficultyColor(
-                        repository.deployment
+                        repository.deployment,
                       )} border font-medium text-xs`}
                     >
                       <Rocket className="w-2.5 h-2.5 mr-1" />
                       {getLevelDescription(
                         deploymentText,
-                        repository.deployment
+                        repository.deployment,
                       )}
                     </Badge>
                   )}
@@ -504,6 +504,21 @@ export default async function RepositoryDetail({ params }: PageProps) {
                           ),
                           p: ({ children }) => (
                             <p className="mb-2 leading-relaxed">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-inside mb-2 space-y-1">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-inside mb-2 space-y-1">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-sm leading-relaxed">
+                              {children}
+                            </li>
                           ),
                           code: ({ children }) => (
                             <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono text-foreground">
@@ -631,7 +646,7 @@ export default async function RepositoryDetail({ params }: PageProps) {
                     </div>
                     <span className="text-xs text-foreground font-medium">
                       {formatDate(
-                        repository.updated_at || repository.created_at
+                        repository.updated_at || repository.created_at,
                       )}
                     </span>
                   </div>
@@ -730,14 +745,14 @@ export default async function RepositoryDetail({ params }: PageProps) {
                             lang === "JavaScript"
                               ? "bg-yellow-400"
                               : lang === "TypeScript"
-                              ? "bg-blue-500"
-                              : lang === "Python"
-                              ? "bg-green-500"
-                              : lang === "Java"
-                              ? "bg-red-500"
-                              : lang === "Go"
-                              ? "bg-cyan-500"
-                              : "bg-gray-400"
+                                ? "bg-blue-500"
+                                : lang === "Python"
+                                  ? "bg-green-500"
+                                  : lang === "Java"
+                                    ? "bg-red-500"
+                                    : lang === "Go"
+                                      ? "bg-cyan-500"
+                                      : "bg-gray-400"
                           }`}
                         />
                         <span className="font-medium text-foreground text-xs">

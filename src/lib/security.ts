@@ -17,7 +17,7 @@ export interface SecurityConfig {
  */
 export function validateOrigin(
   request: NextRequest,
-  allowedDomains: string[]
+  allowedDomains: string[],
 ): boolean {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
@@ -119,6 +119,17 @@ export function validateApiKey(request: NextRequest): boolean {
     return true;
   }
 
+  // In development, allow localhost requests without API key
+  if (process.env.NODE_ENV === "development") {
+    const host = request.headers.get("host");
+    if (host && (host.includes("localhost") || host.includes("127.0.0.1"))) {
+      console.log(
+        "🔓 Bypassing API key validation for localhost in development",
+      );
+      return true;
+    }
+  }
+
   // If API key is configured, it must be provided and valid
   return apiKey === validApiKey;
 }
@@ -136,7 +147,7 @@ export const SecurityResponses = {
       {
         status: 403,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     ),
 
   rateLimitExceeded: (retryAfter?: number) =>
@@ -151,7 +162,7 @@ export const SecurityResponses = {
           "Content-Type": "application/json",
           "Retry-After": retryAfter ? retryAfter.toString() : "60",
         },
-      }
+      },
     ),
 
   invalidApiKey: () =>
@@ -163,7 +174,7 @@ export const SecurityResponses = {
       {
         status: 401,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     ),
 
   serverError: (message = "Internal server error") =>
@@ -175,6 +186,6 @@ export const SecurityResponses = {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     ),
 };

@@ -19,7 +19,7 @@ export interface MiddlewareOptions {
  */
 export function withApiMiddleware(
   handler: (request: NextRequest) => Promise<Response>,
-  options: MiddlewareOptions = {}
+  options: MiddlewareOptions = {},
 ) {
   return async (request: NextRequest): Promise<Response> => {
     try {
@@ -69,7 +69,7 @@ export function withApiMiddleware(
               "Content-Type": "application/json",
               Allow: options.allowedMethods.join(", "),
             },
-          }
+          },
         );
       }
 
@@ -81,7 +81,7 @@ export function withApiMiddleware(
               request.headers.get("origin") ||
               request.headers.get("referer") ||
               "unknown"
-            }`
+            }`,
           );
           return SecurityResponses.invalidOrigin();
         }
@@ -89,11 +89,26 @@ export function withApiMiddleware(
 
       // 3. API key validation
       if (options.requireApiKey) {
-        if (!validateApiKey(request)) {
+        // In development, allow localhost requests without API key
+        let skipApiKeyForLocalhost = false;
+        if (process.env.NODE_ENV === "development") {
+          const host = request.headers.get("host");
+          if (
+            host &&
+            (host.includes("localhost") || host.includes("127.0.0.1"))
+          ) {
+            skipApiKeyForLocalhost = true;
+            console.log(
+              "🔓 Bypassing API key requirement for localhost in development",
+            );
+          }
+        }
+
+        if (!skipApiKeyForLocalhost && !validateApiKey(request)) {
           console.warn(
             `Blocked request with invalid API key from IP: ${getClientIP(
-              request
-            )}`
+              request,
+            )}`,
           );
           return SecurityResponses.invalidApiKey();
         }
@@ -123,12 +138,12 @@ export function withApiMiddleware(
 
         newResponse.headers.set(
           "X-RateLimit-Limit",
-          rateLimiters[options.rateLimiter].maxRequests.toString()
+          rateLimiters[options.rateLimiter].maxRequests.toString(),
         );
         newResponse.headers.set("X-RateLimit-Remaining", remaining.toString());
         newResponse.headers.set(
           "X-RateLimit-Reset",
-          Math.ceil(resetTime / 1000).toString()
+          Math.ceil(resetTime / 1000).toString(),
         );
 
         return newResponse;

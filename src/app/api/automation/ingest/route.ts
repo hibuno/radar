@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY || "";
 
 interface ImageItem {
@@ -56,7 +57,7 @@ function extractHomepageFromReadme(readmeContent: string): string | null {
 
       // Check if line contains any homepage keywords
       const hasHomepageKeyword = homepageKeywords.some((keyword) =>
-        lowerLine.includes(keyword)
+        lowerLine.includes(keyword),
       );
 
       if (hasHomepageKeyword) {
@@ -113,7 +114,7 @@ function extractHomepageFromReadme(readmeContent: string): string | null {
  */
 async function extractImagesFromReadme(
   readmeContent: string,
-  repoUrl: string
+  repoUrl: string,
 ): Promise<ImageItem[]> {
   const images: ImageItem[] = [];
 
@@ -146,7 +147,8 @@ async function extractImagesFromReadme(
 
   // Remove duplicates based on URL
   const uniqueImages = images.filter(
-    (image, index, self) => index === self.findIndex((i) => i.url === image.url)
+    (image, index, self) =>
+      index === self.findIndex((i) => i.url === image.url),
   );
 
   return uniqueImages;
@@ -158,7 +160,7 @@ async function extractImagesFromReadme(
 async function processImageUrl(
   imageUrl: string,
   repoUrl: string,
-  type: string
+  type: string,
 ): Promise<ImageItem | null> {
   try {
     // Skip obviously invalid URLs
@@ -219,7 +221,7 @@ async function processImageUrl(
  * Get image dimensions from URL
  */
 async function getImageDimensions(
-  imageUrl: string
+  imageUrl: string,
 ): Promise<{ width: number; height: number } | null> {
   try {
     const response = await fetch(imageUrl, {
@@ -243,7 +245,7 @@ async function getImageDimensions(
     const contentType = response.headers.get("content-type");
     if (contentType && !contentType.startsWith("image/")) {
       console.log(
-        `Invalid content type for image: ${contentType} - ${imageUrl}`
+        `Invalid content type for image: ${contentType} - ${imageUrl}`,
       );
       return null;
     }
@@ -275,7 +277,7 @@ function isValidImage(width: number, height: number): boolean {
  */
 async function takeScreenshot(
   url: string,
-  maxRetries: number = 3
+  maxRetries: number = 3,
 ): Promise<Buffer | null> {
   if (!BROWSERLESS_API_KEY) {
     console.warn("BROWSERLESS_API_KEY not set, skipping screenshot generation");
@@ -287,7 +289,7 @@ async function takeScreenshot(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `📸 Taking screenshot of: ${url} (attempt ${attempt}/${maxRetries})`
+        `📸 Taking screenshot of: ${url} (attempt ${attempt}/${maxRetries})`,
       );
 
       const response = await fetch(
@@ -305,12 +307,12 @@ async function takeScreenshot(
               type: "png",
             },
           }),
-        }
+        },
       );
 
       if (!response.ok) {
         throw new Error(
-          `Browserless API error: ${response.status} - ${response.statusText}`
+          `Browserless API error: ${response.status} - ${response.statusText}`,
         );
       }
 
@@ -318,7 +320,7 @@ async function takeScreenshot(
       const buffer = Buffer.from(arrayBuffer);
 
       console.log(
-        `✅ Screenshot captured successfully (${buffer.length} bytes)`
+        `✅ Screenshot captured successfully (${buffer.length} bytes)`,
       );
       return buffer;
     } catch (error) {
@@ -336,7 +338,7 @@ async function takeScreenshot(
 
   console.error(
     `❌ All ${maxRetries} screenshot attempts failed for ${url}. Last error:`,
-    lastError
+    lastError,
   );
   return null;
 }
@@ -346,12 +348,16 @@ async function takeScreenshot(
  */
 async function uploadToSupabaseStorage(
   buffer: Buffer,
-  fileName: string
+  fileName: string,
 ): Promise<string | null> {
   try {
     console.log(`📤 Uploading screenshot to Supabase storage: ${fileName}`);
 
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Use service role key for storage operations to bypass RLS
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY,
+    );
 
     const { error } = await supabaseClient.storage
       .from("images")
@@ -391,7 +397,7 @@ async function ingestHandler(_request: NextRequest) {
       { name: "paper", fetcher: fetchPaperRepositories },
       { name: "trending", fetcher: fetchTrendingRepositories },
     ];
-    const MAX_REPOS_PER_HOUR = 20;
+    const MAX_REPOS_PER_HOUR = 1;
 
     // Collect all new repositories from all sources first
     const allNewRepos: any[] = [];
@@ -430,7 +436,7 @@ async function ingestHandler(_request: NextRequest) {
         }
 
         console.log(
-          `📋 Found ${newRepos.length} new repositories from ${source}`
+          `📋 Found ${newRepos.length} new repositories from ${source}`,
         );
         totalNewRepos += newRepos.length;
         allNewRepos.push(...newRepos);
@@ -445,7 +451,7 @@ async function ingestHandler(_request: NextRequest) {
         errors.push(
           `${source}: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
         continue;
       }
@@ -454,7 +460,7 @@ async function ingestHandler(_request: NextRequest) {
     // Limit to MAX_REPOS_PER_HOUR and prioritize by source
     const limitedRepos = allNewRepos.slice(0, MAX_REPOS_PER_HOUR);
     console.log(
-      `🎯 Processing ${limitedRepos.length} repositories (limited from ${totalNewRepos} total)`
+      `🎯 Processing ${limitedRepos.length} repositories (limited from ${totalNewRepos} total)`,
     );
 
     // Add repositories to database and process them with full GitHub data
@@ -465,7 +471,7 @@ async function ingestHandler(_request: NextRequest) {
         console.log(
           `➕ Adding & Processing ${i + 1}/${limitedRepos.length}: ${
             repo.name || repo.href
-          } (from ${repo.source})`
+          } (from ${repo.source})`,
         );
 
         const repositoryPath = repo.href || repo.name;
@@ -582,7 +588,7 @@ async function ingestHandler(_request: NextRequest) {
           } catch (imageError) {
             console.log(
               `⚠️  Image extraction failed for ${repositoryPath}, continuing without images`,
-              imageError
+              imageError,
             );
           }
         }
@@ -603,11 +609,11 @@ async function ingestHandler(_request: NextRequest) {
             if (screenshot) {
               const fileName = `images/${repositoryPath.replace(
                 "/",
-                "-"
+                "-",
               )}-${Date.now()}.png`;
               screenshotUrl = await uploadToSupabaseStorage(
                 screenshot,
-                fileName
+                fileName,
               );
               if (screenshotUrl) {
                 console.log(`✅ Screenshot uploaded: ${screenshotUrl}`);
@@ -616,7 +622,7 @@ async function ingestHandler(_request: NextRequest) {
           } catch (screenshotError) {
             console.log(
               `⚠️  Screenshot failed for ${homepageUrl}, continuing without screenshot`,
-              screenshotError
+              screenshotError,
             );
           }
         }
@@ -634,7 +640,7 @@ async function ingestHandler(_request: NextRequest) {
 
         // Filter out star-history images
         const filteredImages = allImages.filter(
-          (img) => !img.url.includes("star-history.com")
+          (img) => !img.url.includes("star-history.com"),
         );
 
         // Create full repository record with GitHub data
@@ -735,7 +741,7 @@ async function ingestHandler(_request: NextRequest) {
           error instanceof Error ? error.message : "Unknown error occurred",
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -743,5 +749,5 @@ async function ingestHandler(_request: NextRequest) {
 // Apply security middleware - require API key for automation endpoints
 export const POST = withApiMiddleware(
   ingestHandler,
-  middlewareConfigs.scraping
+  middlewareConfigs.scraping,
 );
