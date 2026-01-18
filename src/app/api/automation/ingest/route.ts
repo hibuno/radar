@@ -397,7 +397,7 @@ async function ingestHandler(_request: NextRequest) {
       { name: "paper", fetcher: fetchPaperRepositories },
       { name: "trending", fetcher: fetchTrendingRepositories },
     ];
-    const MAX_REPOS_PER_HOUR = 1;
+    const MAX_REPOS_PER_PROCESS = 30;
 
     // Collect all new repositories from all sources first
     const allNewRepos: any[] = [];
@@ -457,8 +457,8 @@ async function ingestHandler(_request: NextRequest) {
       }
     }
 
-    // Limit to MAX_REPOS_PER_HOUR and prioritize by source
-    const limitedRepos = allNewRepos.slice(0, MAX_REPOS_PER_HOUR);
+    // Limit to MAX_REPOS_PER_PROCESS and prioritize by source
+    const limitedRepos = allNewRepos.slice(0, MAX_REPOS_PER_PROCESS);
     console.log(
       `🎯 Processing ${limitedRepos.length} repositories (limited from ${totalNewRepos} total)`,
     );
@@ -639,9 +639,9 @@ async function ingestHandler(_request: NextRequest) {
         }
 
         // Filter out star-history images
-        const filteredImages = allImages.filter(
-          (img) => !img.url.includes("star-history.com"),
-        );
+        const filteredImages = allImages
+          .filter((img) => !img.url.includes("star-history.com"))
+          .filter((img) => !img.url.includes("shields.io"));
 
         // Create full repository record with GitHub data
         const repoRecord = {
@@ -719,8 +719,8 @@ async function ingestHandler(_request: NextRequest) {
       totalFound: totalNewRepos,
       added: addedCount,
       processed: processedCount,
-      limited: totalNewRepos > MAX_REPOS_PER_HOUR,
-      maxPerHour: MAX_REPOS_PER_HOUR,
+      limited: totalNewRepos > MAX_REPOS_PER_PROCESS,
+      maxPerHour: MAX_REPOS_PER_PROCESS,
       errors: errorCount,
       errorDetails: errors.slice(0, 10),
       sources: sources.map((s) => s.name),
